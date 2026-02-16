@@ -120,19 +120,21 @@ const NotificationsPage = () => {
                       })}
                     </p>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0 mt-1">
-                    {!n.read && <div className="w-2 h-2 rounded-full bg-primary" />}
-                    {isActionable && (
-                      <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
-                    )}
+                  <div className="flex flex-col items-center gap-2 shrink-0 mt-0.5">
+                    <div className="flex items-center gap-1">
+                      {!n.read && <div className="w-2 h-2 rounded-full bg-primary" />}
+                      {isActionable && (
+                        <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
+                      )}
+                    </div>
+                    <button
+                      onClick={(e) => dismissOne(n.id, e)}
+                      className="p-1 rounded-full text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all"
+                      aria-label="Dismiss notification"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                  <button
-                    onClick={(e) => dismissOne(n.id, e)}
-                    className="absolute top-2 right-2 p-1 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
-                    aria-label="Dismiss notification"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
                 </motion.div>
               );
             })}
