@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import StatusBadge from "@/components/StatusBadge";
-import { mockProjects, mockFreelancers, Project, FloralItem, FloralItemDesign, getAttentionFlags } from "@/data/mockData";
-import { Calendar, MapPin, DollarSign, Truck, Check, X, Camera, AlertCircle, CheckCircle2, Image, Clock, Car, Flower2 } from "lucide-react";
+import { mockProjects, mockFreelancers, Project, FloralItem, FloralItemDesign, getAttentionFlags, SERVICE_LEVEL_OPTIONS } from "@/data/mockData";
+import { Calendar, MapPin, DollarSign, Truck, Check, X, Camera, AlertCircle, CheckCircle2, Image, Clock, Car, Flower2, FileText, Phone, Eye, EyeOff, Briefcase } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -80,131 +80,202 @@ const ProjectDetail = () => {
   );
 };
 
-const OverviewTab = ({ project, role, assignedFreelancer }: { project: Project; role: string; assignedFreelancer: any }) => (
-  <div className="space-y-4">
-    {/* Details Card */}
-    <div className="bg-card rounded-lg border border-border p-4 space-y-3">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Calendar className="w-4 h-4" />
-        <span>
-          {new Date(project.dateStart).toLocaleDateString("en-US", { weekday: "short", month: "long", day: "numeric" })}
-          {project.dateEnd !== project.dateStart && ` – ${new Date(project.dateEnd).toLocaleDateString("en-US", { weekday: "short", month: "long", day: "numeric" })}`}
-          {`, ${new Date(project.dateStart).getFullYear()}`} · {project.time}
-        </span>
-      </div>
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <MapPin className="w-4 h-4" />
-        <span>{project.location}</span>
-      </div>
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Truck className="w-4 h-4" />
-        <span>{project.deliveryMethod === "ship" ? "Shipped to freelancer" : "Pickup from wholesaler"}</span>
-      </div>
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Car className="w-4 h-4" />
-        <span>{project.transportMethod === "personal_vehicle" ? "Personal Vehicle" : "U-Haul Rental"}</span>
-      </div>
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <DollarSign className="w-4 h-4" />
-        <span className="font-medium text-foreground">${project.pay}</span>
-      </div>
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Clock className="w-4 h-4" />
-        <span>{project.totalHours} hours</span>
-      </div>
-    </div>
+const OverviewTab = ({ project, role, assignedFreelancer }: { project: Project; role: string; assignedFreelancer: any }) => {
+  const v = project.fieldVisibility;
 
-    {/* Floral Items */}
-    {project.floralItems.length > 0 && (
+  /** Whether a field should be shown: admin always sees all, freelancer only if visible + has content */
+  const show = (key: string, hasContent: boolean) => {
+    if (role === "admin") return true;
+    return hasContent && v[key] !== false;
+  };
+
+  const serviceLevelLabels = project.serviceLevel
+    .map((s) => SERVICE_LEVEL_OPTIONS.find((o) => o.value === s)?.label ?? s)
+    .join(", ");
+
+  return (
+    <div className="space-y-4">
+      {/* Details Card */}
       <div className="bg-card rounded-lg border border-border p-4 space-y-3">
-        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <Flower2 className="w-4 h-4 text-primary" /> Floral Items
-        </h3>
-        <div className="space-y-2">
-          {project.floralItems.map((item) => (
-            <div key={item.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
-              <span className="text-sm text-foreground">{item.name}</span>
-              <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">×{item.quantity}</span>
-            </div>
-          ))}
+        {/* Date — always visible */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Calendar className="w-4 h-4" />
+          <span>
+            {new Date(project.dateStart).toLocaleDateString("en-US", { weekday: "short", month: "long", day: "numeric" })}
+            {project.dateEnd !== project.dateStart && ` – ${new Date(project.dateEnd).toLocaleDateString("en-US", { weekday: "short", month: "long", day: "numeric" })}`}
+            {`, ${new Date(project.dateStart).getFullYear()}`}
+          </span>
         </div>
-      </div>
-    )}
 
-    {/* Description */}
-    <div className="bg-card rounded-lg border border-border p-4 space-y-2">
-      <h3 className="text-sm font-semibold text-foreground">Description</h3>
-      <p className="text-sm text-muted-foreground leading-relaxed">{project.description}</p>
-    </div>
+        {show("location", !!project.location) && (
+          <FieldRow icon={<MapPin className="w-4 h-4" />} visible={v.location !== false} fieldKey="location" role={role}>
+            {project.location}
+          </FieldRow>
+        )}
 
-    {/* Mood */}
-    <div className="bg-card rounded-lg border border-border p-4 space-y-2">
-      <h3 className="text-sm font-semibold text-foreground">Style & Mood</h3>
-      <p className="text-sm text-muted-foreground leading-relaxed">{project.moodDescription}</p>
-    </div>
+        {show("transportMethod", true) && (
+          <FieldRow icon={<Car className="w-4 h-4" />} visible={v.transportMethod !== false} fieldKey="transportMethod" role={role}>
+            {project.transportMethod === "personal_vehicle" ? "Personal Vehicle" : "U-Haul Rental"}
+          </FieldRow>
+        )}
 
-    {/* Inspiration Photos */}
-    {project.inspirationPhotos.length > 0 && (
-      <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-foreground">Inspiration</h3>
-        <div className="grid grid-cols-2 gap-2">
-          {project.inspirationPhotos.map((url, i) => (
-            <div key={i} className="rounded-lg overflow-hidden aspect-square">
-              <img src={url} alt={`Inspiration ${i + 1}`} className="w-full h-full object-cover" />
-            </div>
-          ))}
-        </div>
-      </div>
-    )}
+        {show("pay", true) && (
+          <FieldRow icon={<DollarSign className="w-4 h-4" />} visible={v.pay !== false} fieldKey="pay" role={role}>
+            <span className="font-medium text-foreground">${project.pay}</span>
+          </FieldRow>
+        )}
 
-    {/* Assigned / Interested Freelancers (Admin view) */}
-    {role === "admin" && (
-      <div className="bg-card rounded-lg border border-border p-4 space-y-3">
-        <h3 className="text-sm font-semibold text-foreground">Freelancers</h3>
-        {assignedFreelancer ? (
-          <div className="flex items-center gap-3">
-            <img src={assignedFreelancer.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
-            <div>
-              <div className="text-sm font-medium text-foreground">{assignedFreelancer.name}</div>
-              <div className="text-xs text-primary font-medium">Assigned</div>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {project.interestedFreelancerIds.map((fId) => {
-              const f = mockFreelancers.find((fr) => fr.id === fId);
-              if (!f) return null;
-              return (
-                <div key={f.id} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <img src={f.avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover" />
-                    <div className="text-sm font-medium text-foreground">{f.name}</div>
-                  </div>
-                  <button className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-foreground">
-                    Approve
-                  </button>
-                </div>
-              );
-            })}
-            {project.interestedFreelancerIds.length === 0 && (
-              <p className="text-sm text-muted-foreground">No responses yet</p>
-            )}
-          </div>
+        {show("totalHours", true) && (
+          <FieldRow icon={<Clock className="w-4 h-4" />} visible={v.totalHours !== false} fieldKey="totalHours" role={role}>
+            {project.totalHours} hours
+          </FieldRow>
+        )}
+
+        {show("serviceLevel", project.serviceLevel.length > 0) && (
+          <FieldRow icon={<Briefcase className="w-4 h-4" />} visible={v.serviceLevel !== false} fieldKey="serviceLevel" role={role}>
+            {serviceLevelLabels}
+          </FieldRow>
+        )}
+
+        {show("dayOfContact", !!project.dayOfContact) && (
+          <FieldRow icon={<Phone className="w-4 h-4" />} visible={v.dayOfContact !== false} fieldKey="dayOfContact" role={role}>
+            {project.dayOfContact}
+          </FieldRow>
         )}
       </div>
-    )}
 
-    {/* Freelancer action buttons */}
-    {role === "freelancer" && project.status === "unassigned" && (
-      <div className="flex gap-3">
-        <button className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium">
-          I'm Interested
-        </button>
-        <button className="flex-1 py-3 rounded-lg bg-muted text-muted-foreground text-sm font-medium">
-          Unavailable
-        </button>
-      </div>
+      {/* Timeline */}
+      {show("timeline", !!project.timeline) && (
+        <div className="bg-card rounded-lg border border-border p-4 space-y-2">
+          <FieldHeader label="Timeline" visible={v.timeline !== false} fieldKey="timeline" role={role} />
+          <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{project.timeline}</p>
+        </div>
+      )}
+
+      {/* Floral Items */}
+      {show("floralItems", project.floralItems.length > 0) && project.floralItems.length > 0 && (
+        <div className="bg-card rounded-lg border border-border p-4 space-y-3">
+          <FieldHeader label="Floral Items" visible={v.floralItems !== false} fieldKey="floralItems" role={role} icon={<Flower2 className="w-4 h-4 text-primary" />} />
+          <div className="space-y-2">
+            {project.floralItems.map((item) => (
+              <div key={item.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
+                <span className="text-sm text-foreground">{item.name}</span>
+                <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">×{item.quantity}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Description */}
+      {show("description", !!project.description) && (
+        <div className="bg-card rounded-lg border border-border p-4 space-y-2">
+          <FieldHeader label="Description" visible={v.description !== false} fieldKey="description" role={role} />
+          <p className="text-sm text-muted-foreground leading-relaxed">{project.description}</p>
+        </div>
+      )}
+
+      {/* Mood */}
+      {show("moodDescription", !!project.moodDescription) && (
+        <div className="bg-card rounded-lg border border-border p-4 space-y-2">
+          <FieldHeader label="Style & Mood" visible={v.moodDescription !== false} fieldKey="moodDescription" role={role} />
+          <p className="text-sm text-muted-foreground leading-relaxed">{project.moodDescription}</p>
+        </div>
+      )}
+
+      {/* Inspiration Photos */}
+      {show("inspirationPhotos", project.inspirationPhotos.length > 0) && project.inspirationPhotos.length > 0 && (
+        <div className="space-y-2">
+          <FieldHeader label="Inspiration" visible={v.inspirationPhotos !== false} fieldKey="inspirationPhotos" role={role} />
+          <div className="grid grid-cols-2 gap-2">
+            {project.inspirationPhotos.map((url, i) => (
+              <div key={i} className="rounded-lg overflow-hidden aspect-square">
+                <img src={url} alt={`Inspiration ${i + 1}`} className="w-full h-full object-cover" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Assigned / Interested Freelancers (Admin view) */}
+      {role === "admin" && (
+        <div className="bg-card rounded-lg border border-border p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-foreground">Freelancers</h3>
+          {assignedFreelancer ? (
+            <div className="flex items-center gap-3">
+              <img src={assignedFreelancer.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+              <div>
+                <div className="text-sm font-medium text-foreground">{assignedFreelancer.name}</div>
+                <div className="text-xs text-primary font-medium">Assigned</div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {project.interestedFreelancerIds.map((fId) => {
+                const f = mockFreelancers.find((fr) => fr.id === fId);
+                if (!f) return null;
+                return (
+                  <div key={f.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <img src={f.avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover" />
+                      <div className="text-sm font-medium text-foreground">{f.name}</div>
+                    </div>
+                    <button className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-foreground">
+                      Approve
+                    </button>
+                  </div>
+                );
+              })}
+              {project.interestedFreelancerIds.length === 0 && (
+                <p className="text-sm text-muted-foreground">No responses yet</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Freelancer action buttons */}
+      {role === "freelancer" && project.status === "unassigned" && (
+        <div className="flex gap-3">
+          <button className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium">
+            I'm Interested
+          </button>
+          <button className="flex-1 py-3 rounded-lg bg-muted text-muted-foreground text-sm font-medium">
+            Unavailable
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/** Inline visibility toggle for admin */
+const VisibilityToggle = ({ visible, fieldKey }: { visible: boolean; fieldKey: string }) => (
+  <button
+    type="button"
+    className={cn(
+      "ml-auto p-1 rounded transition-colors",
+      visible ? "text-primary hover:text-primary/80" : "text-muted-foreground/40 hover:text-muted-foreground"
     )}
+    title={visible ? "Visible to freelancer" : "Hidden from freelancer"}
+  >
+    {visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+  </button>
+);
+
+const FieldRow = ({ icon, children, visible, fieldKey, role }: { icon: React.ReactNode; children: React.ReactNode; visible: boolean; fieldKey: string; role: string }) => (
+  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+    {icon}
+    <span className="flex-1">{children}</span>
+    {role === "admin" && <VisibilityToggle visible={visible} fieldKey={fieldKey} />}
+  </div>
+);
+
+const FieldHeader = ({ label, visible, fieldKey, role, icon }: { label: string; visible: boolean; fieldKey: string; role: string; icon?: React.ReactNode }) => (
+  <div className="flex items-center gap-2">
+    {icon}
+    <h3 className="text-sm font-semibold text-foreground">{label}</h3>
+    {role === "admin" && <VisibilityToggle visible={visible} fieldKey={fieldKey} />}
   </div>
 );
 

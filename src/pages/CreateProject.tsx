@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { Camera, Plus, Trash2 } from "lucide-react";
+import { Camera, Plus, Trash2, Eye, EyeOff } from "lucide-react";
+import { ServiceLevel, SERVICE_LEVEL_OPTIONS, DEFAULT_VISIBILITY, FieldVisibility } from "@/data/mockData";
+import { cn } from "@/lib/utils";
 
 interface FloralItemRow {
   id: string;
@@ -18,18 +20,33 @@ const CreateProject = () => {
     eventName: "",
     dateStart: "",
     dateEnd: "",
-    time: "",
+    timeline: "",
     location: "",
     pay: "",
     totalHours: "",
     description: "",
     moodDescription: "",
-    deliveryMethod: "ship" as "ship" | "pickup",
     transportMethod: "personal_vehicle" as "personal_vehicle" | "uhaul_rental",
+    serviceLevel: [] as ServiceLevel[],
+    dayOfContact: "",
   });
   const [floralItems, setFloralItems] = useState<FloralItemRow[]>([]);
+  const [visibility, setVisibility] = useState<FieldVisibility>({ ...DEFAULT_VISIBILITY });
 
   const update = (key: string, value: string) => setForm((p) => ({ ...p, [key]: value }));
+
+  const toggleService = (val: ServiceLevel) => {
+    setForm((p) => ({
+      ...p,
+      serviceLevel: p.serviceLevel.includes(val)
+        ? p.serviceLevel.filter((s) => s !== val)
+        : [...p.serviceLevel, val],
+    }));
+  };
+
+  const toggleVisibility = (key: string) => {
+    setVisibility((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   const addFloralItem = () => {
     setFloralItems((prev) => [...prev, { id: makeId(), name: "", quantity: "1" }]);
@@ -58,16 +75,37 @@ const CreateProject = () => {
           <InputField label="End Date" type="date" value={form.dateEnd} onChange={(v) => update("dateEnd", v)} />
         </div>
 
-        <InputField label="Time" type="time" value={form.time} onChange={(v) => update("time", v)} />
+        {/* Timeline */}
+        <FieldWithVisibility label="Timeline" visible={visibility.timeline} onToggle={() => toggleVisibility("timeline")}>
+          <textarea
+            value={form.timeline}
+            onChange={(e) => update("timeline", e.target.value)}
+            placeholder="Schedule notes, timing instructions, load-in details..."
+            rows={3}
+            className="w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm resize-none"
+          />
+        </FieldWithVisibility>
 
-        <InputField label="Location" value={form.location} onChange={(v) => update("location", v)} placeholder="Venue name & city" />
+        <FieldWithVisibility label="Location" visible={visibility.location} onToggle={() => toggleVisibility("location")}>
+          <input
+            type="text"
+            value={form.location}
+            onChange={(e) => update("location", e.target.value)}
+            placeholder="Venue name & city"
+            className="w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+          />
+        </FieldWithVisibility>
+
         <div className="grid grid-cols-2 gap-3">
-          <InputField label="Project Pay" type="number" value={form.pay} onChange={(v) => update("pay", v)} placeholder="$" />
-          <InputField label="Total Hours" type="number" value={form.totalHours} onChange={(v) => update("totalHours", v)} placeholder="hrs" />
+          <FieldWithVisibility label="Project Pay" visible={visibility.pay} onToggle={() => toggleVisibility("pay")}>
+            <input type="number" value={form.pay} onChange={(e) => update("pay", e.target.value)} placeholder="$" className="w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" />
+          </FieldWithVisibility>
+          <FieldWithVisibility label="Total Hours" visible={visibility.totalHours} onToggle={() => toggleVisibility("totalHours")}>
+            <input type="number" value={form.totalHours} onChange={(e) => update("totalHours", e.target.value)} placeholder="hrs" className="w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" />
+          </FieldWithVisibility>
         </div>
 
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-foreground">Description</label>
+        <FieldWithVisibility label="Description" visible={visibility.description} onToggle={() => toggleVisibility("description")}>
           <textarea
             value={form.description}
             onChange={(e) => update("description", e.target.value)}
@@ -75,10 +113,9 @@ const CreateProject = () => {
             rows={3}
             className="w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm resize-none"
           />
-        </div>
+        </FieldWithVisibility>
 
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-foreground">Style & Mood</label>
+        <FieldWithVisibility label="Style & Mood" visible={visibility.moodDescription} onToggle={() => toggleVisibility("moodDescription")}>
           <textarea
             value={form.moodDescription}
             onChange={(e) => update("moodDescription", e.target.value)}
@@ -86,13 +123,33 @@ const CreateProject = () => {
             rows={2}
             className="w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm resize-none"
           />
-        </div>
+        </FieldWithVisibility>
+
+        {/* Service Level */}
+        <FieldWithVisibility label="Service Level" visible={visibility.serviceLevel} onToggle={() => toggleVisibility("serviceLevel")}>
+          <div className="flex flex-wrap gap-2">
+            {SERVICE_LEVEL_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => toggleService(opt.value)}
+                className={cn(
+                  "py-2 px-4 rounded-lg text-xs font-medium border transition-colors",
+                  form.serviceLevel.includes(opt.value)
+                    ? "border-primary bg-primary/5 text-primary"
+                    : "border-input bg-card text-muted-foreground"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </FieldWithVisibility>
 
         {/* Floral Items */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Floral Items</label>
+        <FieldWithVisibility label="Floral Items" visible={visibility.floralItems} onToggle={() => toggleVisibility("floralItems")}>
           {floralItems.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-2 mb-2">
               {floralItems.map((item) => (
                 <div key={item.id} className="flex items-center gap-2">
                   <input
@@ -129,35 +186,10 @@ const CreateProject = () => {
             <Plus className="w-4 h-4" />
             Add Floral Item
           </button>
-        </div>
+        </FieldWithVisibility>
 
-        {/* Delivery Method */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Supply Delivery</label>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { value: "ship" as const, label: "Ship to Freelancer" },
-              { value: "pickup" as const, label: "Pickup from Wholesaler" },
-            ].map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => update("deliveryMethod", opt.value)}
-                className={`py-3 px-3 rounded-lg text-xs font-medium border transition-colors ${
-                  form.deliveryMethod === opt.value
-                    ? "border-primary bg-primary/5 text-primary"
-                    : "border-input bg-card text-muted-foreground"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Transport Method */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Freelancer Transport</label>
+        {/* Delivery Vehicle */}
+        <FieldWithVisibility label="Delivery Vehicle" visible={visibility.transportMethod} onToggle={() => toggleVisibility("transportMethod")}>
           <div className="grid grid-cols-2 gap-2">
             {[
               { value: "personal_vehicle" as const, label: "Personal Vehicle" },
@@ -167,21 +199,32 @@ const CreateProject = () => {
                 key={opt.value}
                 type="button"
                 onClick={() => update("transportMethod", opt.value)}
-                className={`py-3 px-3 rounded-lg text-xs font-medium border transition-colors ${
+                className={cn(
+                  "py-3 px-3 rounded-lg text-xs font-medium border transition-colors",
                   form.transportMethod === opt.value
                     ? "border-primary bg-primary/5 text-primary"
                     : "border-input bg-card text-muted-foreground"
-                }`}
+                )}
               >
                 {opt.label}
               </button>
             ))}
           </div>
-        </div>
+        </FieldWithVisibility>
+
+        {/* Day-of Contact */}
+        <FieldWithVisibility label="Day-of Contact" visible={visibility.dayOfContact} onToggle={() => toggleVisibility("dayOfContact")}>
+          <input
+            type="text"
+            value={form.dayOfContact}
+            onChange={(e) => update("dayOfContact", e.target.value)}
+            placeholder="Name & phone number"
+            className="w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+          />
+        </FieldWithVisibility>
 
         {/* Photo Upload Placeholder */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Inspiration Photos</label>
+        <FieldWithVisibility label="Inspiration Photos" visible={visibility.inspirationPhotos} onToggle={() => toggleVisibility("inspirationPhotos")}>
           <button
             type="button"
             className="w-full py-8 rounded-lg border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors flex flex-col items-center gap-2"
@@ -189,7 +232,7 @@ const CreateProject = () => {
             <Camera className="w-5 h-5" />
             <span className="text-xs font-medium">Tap to upload photos</span>
           </button>
-        </div>
+        </FieldWithVisibility>
 
         <button
           type="submit"
@@ -201,6 +244,33 @@ const CreateProject = () => {
     </AppLayout>
   );
 };
+
+/** Field wrapper with visibility toggle */
+const FieldWithVisibility = ({
+  label, visible, onToggle, children,
+}: {
+  label: string; visible: boolean; onToggle: () => void; children: React.ReactNode;
+}) => (
+  <div className="space-y-1.5">
+    <div className="flex items-center justify-between">
+      <label className="text-sm font-medium text-foreground">{label}</label>
+      <button
+        type="button"
+        onClick={onToggle}
+        className={cn(
+          "flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors",
+          visible
+            ? "text-primary bg-primary/10"
+            : "text-muted-foreground bg-muted"
+        )}
+      >
+        {visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+        {visible ? "Visible" : "Hidden"}
+      </button>
+    </div>
+    {children}
+  </div>
+);
 
 const InputField = ({
   label, value, onChange, placeholder, type = "text",

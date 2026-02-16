@@ -60,7 +60,7 @@ const ProjectCard = ({ project, role }: ProjectCardProps) => {
             <span>
               {new Date(project.dateStart).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
               {project.dateEnd !== project.dateStart && ` – ${new Date(project.dateEnd).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
-              {`, ${new Date(project.dateStart).getFullYear()}`} · {project.time}
+              {`, ${new Date(project.dateStart).getFullYear()}`}
             </span>
           </div>
           <div className="flex items-center gap-2">
