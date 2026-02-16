@@ -1,4 +1,4 @@
-import { Project, mockFreelancers, getAttentionFlags, getAssignedSubCategory } from "@/data/mockData";
+import { Project, mockFreelancers, getAttentionFlags, getAssignedSubCategory, getDesignersAssigned, getDesignersRemaining, isPartiallyFilled } from "@/data/mockData";
 import StatusBadge from "./StatusBadge";
 import { Calendar, MapPin, DollarSign, Users, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -12,9 +12,12 @@ interface ProjectCardProps {
 
 const ProjectCard = ({ project, role }: ProjectCardProps) => {
   const navigate = useNavigate();
-  const assignedFreelancer = project.assignedFreelancerId
-    ? mockFreelancers.find((f) => f.id === project.assignedFreelancerId)
-    : null;
+  const assignedFreelancers = project.assignedFreelancerIds
+    .map((fId) => mockFreelancers.find((f) => f.id === fId))
+    .filter(Boolean);
+  const assigned = getDesignersAssigned(project);
+  const remaining = getDesignersRemaining(project);
+  const partiallyFilled = isPartiallyFilled(project);
 
   const attention = role === "admin" ? getAttentionFlags(project) : { needsReview: false, reasons: [] };
 
@@ -86,13 +89,30 @@ const ProjectCard = ({ project, role }: ProjectCardProps) => {
           </div>
         )}
 
-        {/* Admin: freelancer info (only if no attention flag showing) */}
-        {role === "admin" && !attention.needsReview && (
+        {/* Staffing info for unassigned / partially filled */}
+        {role === "admin" && project.status === "unassigned" && (
+          <div className="flex items-center justify-between gap-2 pt-1 border-t border-border">
+            <div className="flex items-center gap-2">
+              <Users className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">
+                Designers: {assigned} / {project.designersNeeded} assigned
+              </span>
+            </div>
+            {remaining > 0 && (
+              <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full whitespace-nowrap">
+                Needs {remaining} more
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Admin: freelancer info for assigned (only if no attention flag showing) */}
+        {role === "admin" && project.status !== "unassigned" && !attention.needsReview && (
           <div className="flex items-center gap-2 pt-1 border-t border-border">
             <Users className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">
-              {assignedFreelancer
-                ? `Assigned: ${assignedFreelancer.name}`
+              {assignedFreelancers.length > 0
+                ? `Assigned: ${assignedFreelancers.map(f => f!.name).join(", ")}`
                 : `${project.interestedFreelancerIds.length} interested`}
             </span>
           </div>

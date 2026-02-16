@@ -1,4 +1,4 @@
-import { ProjectStatus, STATUS_CONFIG, getAssignedSubCategory, Project } from "@/data/mockData";
+import { ProjectStatus, STATUS_CONFIG, getAssignedSubCategory, isPartiallyFilled, Project } from "@/data/mockData";
 import { cn } from "@/lib/utils";
 
 interface StatusBadgeProps {
@@ -14,6 +14,21 @@ const SUB_CATEGORY_CONFIG = {
 
 const StatusBadge = ({ status, project, className }: StatusBadgeProps) => {
   const config = STATUS_CONFIG[status];
+
+  // For unassigned projects that are partially filled
+  if (status === "unassigned" && project && isPartiallyFilled(project)) {
+    return (
+      <span
+        className={cn(
+          "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium",
+          "bg-warning/10 text-warning",
+          className
+        )}
+      >
+        Partially Filled
+      </span>
+    );
+  }
 
   // For assigned projects, show sub-category if we have the project data
   if (status === "assigned" && project) {

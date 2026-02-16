@@ -26,9 +26,10 @@ export interface Project {
   serviceLevel: ServiceLevel[];
   dayOfContact: string;
   status: ProjectStatus;
+  designersNeeded: number;
   inspirationPhotos: string[];
   recipes: string[];
-  assignedFreelancerId?: string;
+  assignedFreelancerIds: string[];
   interestedFreelancerIds: string[];
   inventoryConfirmed: boolean;
   flowersConfirmed: boolean;
@@ -97,6 +98,19 @@ export const STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string
   assigned: { label: "Assigned", color: "text-primary", bgColor: "bg-primary/10" },
   completed: { label: "Completed", color: "text-success", bgColor: "bg-success/10" },
 };
+
+/** Staffing helpers */
+export function getDesignersAssigned(project: Project): number {
+  return project.assignedFreelancerIds.length;
+}
+
+export function getDesignersRemaining(project: Project): number {
+  return Math.max(0, project.designersNeeded - project.assignedFreelancerIds.length);
+}
+
+export function isPartiallyFilled(project: Project): boolean {
+  return project.assignedFreelancerIds.length > 0 && project.assignedFreelancerIds.length < project.designersNeeded;
+}
 
 /** Derive sub-category for assigned projects based on event dates */
 export function getAssignedSubCategory(project: Project): AssignedSubCategory | null {
@@ -228,11 +242,13 @@ export const mockProjects: Project[] = [
     serviceLevel: ["design", "delivery", "setup", "flip"],
     dayOfContact: "Sarah Anderson — (555) 999-1234",
     status: "unassigned",
+    designersNeeded: 2,
     inspirationPhotos: [
       "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=400",
       "https://images.unsplash.com/photo-1522748906645-95d8adfd52c7?w=400",
     ],
     recipes: [],
+    assignedFreelancerIds: ["f1"],
     interestedFreelancerIds: ["f1", "f2"],
     inventoryConfirmed: false,
     flowersConfirmed: false,
@@ -264,11 +280,12 @@ export const mockProjects: Project[] = [
     serviceLevel: ["design", "delivery", "setup", "strike"],
     dayOfContact: "Event coordinator — (555) 800-2000",
     status: "assigned",
+    designersNeeded: 1,
     inspirationPhotos: [
       "https://images.unsplash.com/photo-1478146059778-26028b07395a?w=400",
     ],
     recipes: [],
-    assignedFreelancerId: "f2",
+    assignedFreelancerIds: ["f2"],
     interestedFreelancerIds: ["f1", "f2", "f3"],
     inventoryConfirmed: true,
     flowersConfirmed: true,
@@ -305,11 +322,12 @@ export const mockProjects: Project[] = [
     serviceLevel: ["design", "delivery", "setup"],
     dayOfContact: "Mom-to-be's sister — (555) 222-3333",
     status: "assigned",
+    designersNeeded: 1,
     inspirationPhotos: [
       "https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=400",
     ],
     recipes: [],
-    assignedFreelancerId: "f1",
+    assignedFreelancerIds: ["f1"],
     interestedFreelancerIds: ["f1"],
     inventoryConfirmed: true,
     flowersConfirmed: true,
@@ -344,9 +362,10 @@ export const mockProjects: Project[] = [
     serviceLevel: ["design", "delivery", "setup"],
     dayOfContact: "Mr. Thompson — (555) 444-5555",
     status: "completed",
+    designersNeeded: 1,
     inspirationPhotos: [],
     recipes: [],
-    assignedFreelancerId: "f1",
+    assignedFreelancerIds: ["f1"],
     interestedFreelancerIds: ["f1", "f3"],
     inventoryConfirmed: true,
     flowersConfirmed: true,

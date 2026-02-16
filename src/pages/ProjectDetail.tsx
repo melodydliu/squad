@@ -23,9 +23,9 @@ const ProjectDetail = () => {
     );
   }
 
-  const assignedFreelancer = project.assignedFreelancerId
-    ? mockFreelancers.find((f) => f.id === project.assignedFreelancerId)
-    : null;
+  const assignedFreelancers = project.assignedFreelancerIds
+    .map((fId) => mockFreelancers.find((f) => f.id === fId))
+    .filter(Boolean);
 
   const tabs = [
     { key: "overview" as const, label: "Overview" },
@@ -66,7 +66,7 @@ const ProjectDetail = () => {
         {/* Tab Content */}
         <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
           {activeTab === "overview" && (
-            <OverviewTab project={project} role={role} assignedFreelancer={assignedFreelancer} />
+            <OverviewTab project={project} role={role} assignedFreelancers={assignedFreelancers} />
           )}
           {activeTab === "inventory" && (
             <InventoryTab project={project} role={role} />
@@ -80,7 +80,7 @@ const ProjectDetail = () => {
   );
 };
 
-const OverviewTab = ({ project, role, assignedFreelancer }: { project: Project; role: string; assignedFreelancer: any }) => {
+const OverviewTab = ({ project, role, assignedFreelancers }: { project: Project; role: string; assignedFreelancers: any[] }) => {
   const v = project.fieldVisibility;
 
   /** Whether a field should be shown: admin always sees all, freelancer only if visible + has content */
@@ -201,13 +201,20 @@ const OverviewTab = ({ project, role, assignedFreelancer }: { project: Project; 
       {role === "admin" && (
         <div className="bg-card rounded-lg border border-border p-4 space-y-3">
           <h3 className="text-sm font-semibold text-foreground">Freelancers</h3>
-          {assignedFreelancer ? (
-            <div className="flex items-center gap-3">
-              <img src={assignedFreelancer.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
-              <div>
-                <div className="text-sm font-medium text-foreground">{assignedFreelancer.name}</div>
-                <div className="text-xs text-primary font-medium">Assigned</div>
-              </div>
+          {assignedFreelancers.length > 0 ? (
+            <div className="space-y-2">
+              {assignedFreelancers.map((f: any) => (
+                <div key={f.id} className="flex items-center gap-3">
+                  <img src={f.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+                  <div>
+                    <div className="text-sm font-medium text-foreground">{f.name}</div>
+                    <div className="text-xs text-primary font-medium">Assigned</div>
+                  </div>
+                </div>
+              ))}
+              {project.designersNeeded > assignedFreelancers.length && (
+                <p className="text-xs text-warning font-medium">Needs {project.designersNeeded - assignedFreelancers.length} more designer(s)</p>
+              )}
             </div>
           ) : (
             <div className="space-y-2">
