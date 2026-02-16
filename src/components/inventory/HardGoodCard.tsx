@@ -96,7 +96,7 @@ const HardGoodCardList = ({ rows, role, filter = "all" }: HardGoodCardListProps)
               {row.status === "flagged" && !row.notes && !expandedNotes.has(row.id) && (
                 <button
                   onClick={() => toggleNotes(row.id)}
-                  className="flex items-center gap-1.5 mt-2 text-xs text-destructive/80 hover:text-destructive transition-colors"
+                  className="flex items-center gap-1.5 mt-2 text-xs text-warning hover:text-warning/80 transition-colors"
                 >
                   <AlertCircle className="w-3 h-3" />
                   Please add details or a photo to explain the issue.
@@ -105,8 +105,8 @@ const HardGoodCardList = ({ rows, role, filter = "all" }: HardGoodCardListProps)
 
               {row.notes && !expandedNotes.has(row.id) && (
                 <div className="flex items-center gap-1.5 mt-2">
-                  <AlertCircle className="w-3.5 h-3.5 text-destructive flex-shrink-0" />
-                  <span className="text-xs text-destructive">{row.notes}</span>
+                  <AlertCircle className="w-3.5 h-3.5 text-warning flex-shrink-0" />
+                  <span className="text-xs text-muted-foreground">{row.notes}</span>
                 </div>
               )}
 
