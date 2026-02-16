@@ -105,12 +105,6 @@ const NotificationsPage = () => {
                     >
                       {n.message}
                     </p>
-                    {/* Context preview */}
-                    {n.contextPreview && (
-                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed line-clamp-2 italic">
-                        {n.contextPreview}
-                      </p>
-                    )}
                     <div className="flex items-center gap-2 mt-1.5">
                       <p className="text-[11px] text-muted-foreground/70">
                         {new Date(n.createdAt).toLocaleDateString("en-US", {
