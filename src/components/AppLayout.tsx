@@ -11,6 +11,7 @@ interface AppLayoutProps {
   title?: string;
   showBack?: boolean;
   role: "admin" | "freelancer";
+  headerAction?: ReactNode;
 }
 
 const ADMIN_CONTACT = {
@@ -19,7 +20,7 @@ const ADMIN_CONTACT = {
   email: "jane@bloomstudio.com",
 };
 
-const AppLayout = ({ children, title, showBack, role }: AppLayoutProps) => {
+const AppLayout = ({ children, title, showBack, role, headerAction }: AppLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const unreadCount = mockNotifications.filter((n) => !n.read).length;
@@ -56,6 +57,7 @@ const AppLayout = ({ children, title, showBack, role }: AppLayoutProps) => {
             </h1>
           </div>
           <div className="flex items-center gap-1">
+            {headerAction}
             {role === "freelancer" && (
               <Popover>
                 <PopoverTrigger asChild>

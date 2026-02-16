@@ -58,13 +58,17 @@ const AdminDashboard = () => {
     ));
 
   return (
-    <AppLayout role="admin" title="Dashboard">
-      <div className="space-y-6">
-        {/* New Project Button */}
-        <Button onClick={() => navigate("/admin/create")} className="w-full rounded-xl gap-2">
-          <Plus className="w-4 h-4" />
-          New Project
+    <AppLayout
+      role="admin"
+      title="Dashboard"
+      headerAction={
+        <Button onClick={() => navigate("/admin/create")} size="sm" className="rounded-lg gap-1.5 h-8 px-3">
+          <Plus className="w-3.5 h-3.5" />
+          New
         </Button>
+      }
+    >
+      <div className="space-y-6">
 
         {/* Filters */}
         <div className="flex gap-2 overflow-x-auto pt-2 pb-1 scrollbar-hide">
