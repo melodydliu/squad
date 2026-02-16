@@ -339,6 +339,7 @@ export const mockProjects: Project[] = [
       { id: "fl1", flower: "Burgundy Dahlia", color: "Deep Burgundy", stemsInRecipe: 36, totalOrdered: 40, extras: 4, status: "approved", updatedBy: "f2", updatedAt: "2026-02-10T14:30:00" },
       { id: "fl2", flower: "White Rose", color: "White", stemsInRecipe: 48, totalOrdered: 55, extras: 7, status: "approved", updatedBy: "f2", updatedAt: "2026-02-10T14:32:00" },
       { id: "fl3", flower: "Gold Spray Rose", color: "Gold", stemsInRecipe: 24, totalOrdered: 30, extras: 6, status: "flagged", qualityNotes: "Some stems arrived wilted", updatedBy: "f2", updatedAt: "2026-02-10T15:00:00" },
+      { id: "fl4", flower: "Eucalyptus", color: "Green", stemsInRecipe: 20, totalOrdered: 25, extras: 5 },
     ],
     hardGoodInventory: [
       { id: "hg1", item: "Tall Gold Vase", quantity: 12, status: "approved", updatedBy: "f2", updatedAt: "2026-02-10T14:35:00" },
