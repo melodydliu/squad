@@ -114,12 +114,19 @@ export interface Freelancer {
   projectHistory: string[];
 }
 
+export type NotificationTargetTab = "overview" | "designs" | "inventory" | "assignment";
+
 export interface Notification {
   id: string;
   message: string;
   read: boolean;
   createdAt: string;
   type: "project" | "approval" | "inventory" | "design" | "comment";
+  projectId?: string;
+  targetTab?: NotificationTargetTab;
+  targetItemId?: string;
+  projectName?: string;
+  contextPreview?: string;
 }
 
 export const STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string; bgColor: string }> = {
@@ -433,8 +440,49 @@ export const mockProjects: Project[] = [
 ];
 
 export const mockNotifications: Notification[] = [
-  { id: "n1", message: "New project posted: Anderson-Park Wedding", read: false, createdAt: "2026-02-14T10:00:00", type: "project" },
-  { id: "n2", message: "Your designs for Spring Baby Shower need revisions", read: false, createdAt: "2026-02-13T15:30:00", type: "design" },
-  { id: "n3", message: "You've been approved for Luxe Corporate Gala!", read: true, createdAt: "2026-02-11T09:00:00", type: "approval" },
-  { id: "n4", message: "Inventory confirmed for Luxe Corporate Gala", read: true, createdAt: "2026-02-12T14:00:00", type: "inventory" },
+  {
+    id: "n1",
+    message: "New project posted: Anderson-Park Wedding",
+    read: false,
+    createdAt: "2026-02-14T10:00:00",
+    type: "project",
+    projectId: "p1",
+    targetTab: "overview",
+    projectName: "Anderson-Park Wedding",
+    contextPreview: "Intimate garden wedding for 80 guests — 2 designers needed.",
+  },
+  {
+    id: "n2",
+    message: "Your Welcome Arrangement design needs revisions",
+    read: false,
+    createdAt: "2026-02-13T15:30:00",
+    type: "design",
+    projectId: "p3",
+    targetTab: "designs",
+    targetItemId: "fid3",
+    projectName: "Spring Baby Shower",
+    contextPreview: "\"Beautiful! Can we add a few more stems of lavender?\"",
+  },
+  {
+    id: "n3",
+    message: "You've been approved for Luxe Corporate Gala!",
+    read: true,
+    createdAt: "2026-02-11T09:00:00",
+    type: "approval",
+    projectId: "p2",
+    targetTab: "overview",
+    projectName: "Luxe Corporate Gala",
+    contextPreview: "You're confirmed as a designer for this event.",
+  },
+  {
+    id: "n4",
+    message: "Inventory confirmed for Luxe Corporate Gala",
+    read: true,
+    createdAt: "2026-02-12T14:00:00",
+    type: "inventory",
+    projectId: "p2",
+    targetTab: "inventory",
+    projectName: "Luxe Corporate Gala",
+    contextPreview: "All flowers and hard goods have been reviewed.",
+  },
 ];
