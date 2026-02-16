@@ -43,7 +43,11 @@ const ProjectCard = ({ project, role }: ProjectCardProps) => {
         <div className="space-y-1.5 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <Calendar className="w-3.5 h-3.5" />
-            <span>{new Date(project.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} · {project.time}</span>
+            <span>
+              {new Date(project.dateStart).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+              {project.dateEnd !== project.dateStart && ` – ${new Date(project.dateEnd).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+              {`, ${new Date(project.dateStart).getFullYear()}`} · {project.time}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <MapPin className="w-3.5 h-3.5" />

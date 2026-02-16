@@ -3,7 +3,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import StatusBadge from "@/components/StatusBadge";
 import { mockProjects, mockFreelancers, Project } from "@/data/mockData";
-import { Calendar, MapPin, DollarSign, Truck, Check, X, Camera, AlertCircle, CheckCircle2, Image } from "lucide-react";
+import { Calendar, MapPin, DollarSign, Truck, Check, X, Camera, AlertCircle, CheckCircle2, Image, Clock, Car } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -38,7 +38,10 @@ const ProjectDetail = () => {
         {/* Status + Pay header */}
         <div className="flex items-center justify-between">
           <StatusBadge status={project.status} />
-          <span className="text-lg font-bold font-display text-foreground">${project.pay}</span>
+          <div className="text-right">
+            <span className="text-lg font-bold font-display text-foreground">${project.pay}</span>
+            <span className="text-xs text-muted-foreground ml-1.5">· {project.totalHours}h</span>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -82,7 +85,11 @@ const OverviewTab = ({ project, role, assignedFreelancer }: { project: Project; 
     <div className="bg-card rounded-lg border border-border p-4 space-y-3">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Calendar className="w-4 h-4" />
-        <span>{new Date(project.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })} · {project.time}</span>
+        <span>
+          {new Date(project.dateStart).toLocaleDateString("en-US", { weekday: "short", month: "long", day: "numeric" })}
+          {project.dateEnd !== project.dateStart && ` – ${new Date(project.dateEnd).toLocaleDateString("en-US", { weekday: "short", month: "long", day: "numeric" })}`}
+          {`, ${new Date(project.dateStart).getFullYear()}`} · {project.time}
+        </span>
       </div>
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <MapPin className="w-4 h-4" />
@@ -91,6 +98,18 @@ const OverviewTab = ({ project, role, assignedFreelancer }: { project: Project; 
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Truck className="w-4 h-4" />
         <span>{project.deliveryMethod === "ship" ? "Shipped to freelancer" : "Pickup from wholesaler"}</span>
+      </div>
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Car className="w-4 h-4" />
+        <span>{project.transportMethod === "personal_vehicle" ? "Personal Vehicle" : "U-Haul Rental"}</span>
+      </div>
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <DollarSign className="w-4 h-4" />
+        <span className="font-medium text-foreground">${project.pay}</span>
+      </div>
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Clock className="w-4 h-4" />
+        <span>{project.totalHours} hours</span>
       </div>
     </div>
 
