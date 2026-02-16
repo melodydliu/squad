@@ -111,7 +111,7 @@ const ProfilePage = () => {
 
         {/* Optional fields */}
         <div className="bg-card rounded-lg border border-border p-4 space-y-4">
-          <h3 className="font-display text-sm font-semibold text-foreground">Online Presence</h3>
+          <h3 className="font-display text-sm font-semibold text-foreground">Links</h3>
 
           <div className="relative">
             <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
