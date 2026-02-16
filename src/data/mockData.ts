@@ -41,6 +41,7 @@ export interface Project {
   designs: DesignUpload[];
   floralItems: FloralItem[];
   floralItemDesigns: FloralItemDesign[];
+  freelancerResponses: FreelancerResponse[];
   fieldVisibility: FieldVisibility;
   createdAt: string;
 }
@@ -112,6 +113,15 @@ export interface Freelancer {
   avatarUrl: string;
   available: boolean;
   projectHistory: string[];
+}
+
+export type FreelancerResponseStatus = "available" | "unavailable";
+
+export interface FreelancerResponse {
+  freelancerId: string;
+  status: FreelancerResponseStatus;
+  note?: string;
+  timestamp: string;
 }
 
 export type NotificationTargetTab = "overview" | "designs" | "inventory" | "assignment";
@@ -301,6 +311,11 @@ export const mockProjects: Project[] = [
     flowerInventory: [],
     hardGoodInventory: [],
     fieldVisibility: { ...DEFAULT_VISIBILITY },
+    freelancerResponses: [
+      { freelancerId: "f1", status: "available", timestamp: "2026-02-15T09:00:00" },
+      { freelancerId: "f2", status: "available", timestamp: "2026-02-15T10:30:00" },
+      { freelancerId: "f3", status: "unavailable", note: "Booked that weekend", timestamp: "2026-02-15T11:00:00" },
+    ],
     createdAt: "2026-02-14",
   },
   {
@@ -354,6 +369,9 @@ export const mockProjects: Project[] = [
       { id: "hg3", item: "Gold Charger Plate", quantity: 50, status: "flagged", notes: "Vendor confirmed delayed shipment", updatedBy: "f2", updatedAt: "2026-02-10T15:10:00" },
     ],
     fieldVisibility: { ...DEFAULT_VISIBILITY },
+    freelancerResponses: [
+      { freelancerId: "f2", status: "available", timestamp: "2026-02-09T08:00:00" },
+    ],
     createdAt: "2026-02-10",
   },
   {
@@ -396,6 +414,9 @@ export const mockProjects: Project[] = [
     flowerInventory: [],
     hardGoodInventory: [],
     fieldVisibility: { ...DEFAULT_VISIBILITY },
+    freelancerResponses: [
+      { freelancerId: "f1", status: "available", timestamp: "2026-02-07T14:00:00" },
+    ],
     createdAt: "2026-02-08",
   },
   {
@@ -435,6 +456,9 @@ export const mockProjects: Project[] = [
     flowerInventory: [],
     hardGoodInventory: [],
     fieldVisibility: { ...DEFAULT_VISIBILITY },
+    freelancerResponses: [
+      { freelancerId: "f1", status: "available", timestamp: "2026-01-19T10:00:00" },
+    ],
     createdAt: "2026-01-20",
   },
 ];

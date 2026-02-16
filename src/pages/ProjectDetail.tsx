@@ -2,22 +2,25 @@ import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import StatusBadge from "@/components/StatusBadge";
-import { mockProjects, mockFreelancers, Project, FloralItem, FloralItemDesign, FlowerInventoryRow, HardGoodInventoryRow, getAttentionFlags, SERVICE_LEVEL_OPTIONS } from "@/data/mockData";
+import FreelancerResponsePanel from "@/components/FreelancerResponsePanel";
+import { mockProjects, mockFreelancers, mockNotifications, Project, FloralItem, FloralItemDesign, FlowerInventoryRow, HardGoodInventoryRow, getAttentionFlags, getDesignersRemaining, SERVICE_LEVEL_OPTIONS, Notification } from "@/data/mockData";
 import { Calendar, MapPin, DollarSign, Truck, Check, X, Camera, AlertCircle, CheckCircle2, Image, Clock, Car, Flower2, FileText, Phone, Eye, EyeOff, Briefcase, Package, Upload, RefreshCw, Trash2 } from "lucide-react";
 import CsvUpload from "@/components/inventory/CsvUpload";
 import FlowerCardList from "@/components/inventory/FlowerCard";
 import HardGoodCardList from "@/components/inventory/HardGoodCard";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const ProjectDetail = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const role = searchParams.get("role") as "admin" | "freelancer" || "admin";
-  const project = mockProjects.find((p) => p.id === id);
+  const initialProject = mockProjects.find((p) => p.id === id);
   const initialTab = searchParams.get("tab") as "overview" | "inventory" | "designs" || "overview";
   const highlightId = searchParams.get("highlight") || undefined;
   const [activeTab, setActiveTab] = useState<"overview" | "inventory" | "designs">(initialTab);
+  const [project, setProject] = useState<Project | undefined>(initialProject);
 
   // Scroll to highlighted element after render
   useEffect(() => {
@@ -40,12 +43,41 @@ const ProjectDetail = () => {
       <AppLayout role={role} title="Not Found" showBack>
         <div className="text-center py-12 text-muted-foreground">Project not found</div>
       </AppLayout>);
-
   }
 
-  const assignedFreelancers = project.assignedFreelancerIds.
-  map((fId) => mockFreelancers.find((f) => f.id === fId)).
-  filter(Boolean);
+  const handleApproveFreelancer = (freelancerId: string) => {
+    const freelancer = mockFreelancers.find((f) => f.id === freelancerId);
+    const updatedAssigned = [...project.assignedFreelancerIds, freelancerId];
+    const remaining = project.designersNeeded - updatedAssigned.length;
+    const isFull = remaining <= 0;
+
+    setProject({
+      ...project,
+      assignedFreelancerIds: updatedAssigned,
+      status: isFull ? "assigned" : project.status,
+    });
+
+    // Notification for approved freelancer
+    toast.success(`${freelancer?.name || "Freelancer"} approved for ${project.eventName}`);
+
+    // If fully staffed, notify remaining available freelancers
+    if (isFull) {
+      const availableNotApproved = (project.freelancerResponses || [])
+        .filter((r) => r.status === "available" && !updatedAssigned.includes(r.freelancerId));
+      if (availableNotApproved.length > 0) {
+        const names = availableNotApproved
+          .map((r) => mockFreelancers.find((f) => f.id === r.freelancerId)?.name)
+          .filter(Boolean)
+          .join(", ");
+        toast.info(`Notified ${names}: project is no longer available`);
+      }
+      toast.success(`${project.eventName} is now fully staffed!`);
+    }
+  };
+
+  const assignedFreelancers = project.assignedFreelancerIds
+    .map((fId) => mockFreelancers.find((f) => f.id === fId))
+    .filter(Boolean);
 
   const tabs = [
   { key: "overview" as const, label: "Overview" },
@@ -86,7 +118,7 @@ const ProjectDetail = () => {
         {/* Tab Content */}
         <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
           {activeTab === "overview" &&
-          <OverviewTab project={project} role={role} assignedFreelancers={assignedFreelancers} />
+          <OverviewTab project={project} role={role} assignedFreelancers={assignedFreelancers} onApprove={handleApproveFreelancer} />
           }
           {activeTab === "inventory" &&
           <InventoryTab project={project} role={role} />
@@ -100,7 +132,7 @@ const ProjectDetail = () => {
 
 };
 
-const OverviewTab = ({ project, role, assignedFreelancers }: {project: Project;role: string;assignedFreelancers: any[];}) => {
+const OverviewTab = ({ project, role, assignedFreelancers, onApprove }: {project: Project;role: string;assignedFreelancers: any[];onApprove: (id: string) => void;}) => {
   const v = project.fieldVisibility;
 
   /** Whether a field should be shown: admin always sees all, freelancer only if visible + has content */
@@ -219,47 +251,26 @@ const OverviewTab = ({ project, role, assignedFreelancers }: {project: Project;r
         </div>
       }
 
-      {/* Assigned / Interested Freelancers (Admin view) */}
-      {role === "admin" &&
+      {/* Freelancer Responses Panel (Admin on unassigned) */}
+      {role === "admin" && project.status === "unassigned" &&
+      <FreelancerResponsePanel project={project} onApprove={onApprove} />
+      }
+
+      {/* Assigned Freelancers (Admin on assigned/completed) */}
+      {role === "admin" && project.status !== "unassigned" && assignedFreelancers.length > 0 &&
       <div className="bg-card rounded-lg border border-border p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-foreground">Freelancers</h3>
-          {assignedFreelancers.length > 0 ?
-        <div className="space-y-2">
-              {assignedFreelancers.map((f: any) =>
+          <h3 className="text-sm font-semibold text-foreground">Assigned Designers</h3>
+          <div className="space-y-2">
+            {assignedFreelancers.map((f: any) =>
           <div key={f.id} className="flex items-center gap-3">
-                  <img src={f.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
-                  <div>
-                    <div className="text-sm font-medium text-foreground">{f.name}</div>
-                    <div className="text-xs text-primary font-medium">Assigned</div>
-                  </div>
+                <img src={f.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+                <div>
+                  <div className="text-sm font-medium text-foreground">{f.name}</div>
+                  <div className="text-xs text-primary font-medium">Assigned</div>
                 </div>
+              </div>
           )}
-              {project.designersNeeded > assignedFreelancers.length &&
-          <p className="text-xs text-warning font-medium">Needs {project.designersNeeded - assignedFreelancers.length} more designer(s)</p>
-          }
-            </div> :
-
-        <div className="space-y-2">
-              {project.interestedFreelancerIds.map((fId) => {
-            const f = mockFreelancers.find((fr) => fr.id === fId);
-            if (!f) return null;
-            return (
-              <div key={f.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <img src={f.avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover" />
-                      <div className="text-sm font-medium text-foreground">{f.name}</div>
-                    </div>
-                    <button className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-foreground">
-                      Approve
-                    </button>
-                  </div>);
-
-          })}
-              {project.interestedFreelancerIds.length === 0 &&
-          <p className="text-sm text-muted-foreground">No responses yet</p>
-          }
-            </div>
-        }
+          </div>
         </div>
       }
 
