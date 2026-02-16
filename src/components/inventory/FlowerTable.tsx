@@ -14,7 +14,7 @@ const FlowerTable = ({ rows, role, filter = "all" }: FlowerTableProps) => {
   const [photoModal, setPhotoModal] = useState<{ open: boolean; rowId: string }>({ open: false, rowId: "" });
 
   const filtered = filter === "issues"
-    ? rows.filter((r) => !r.received || !!r.qualityNotes)
+    ? rows.filter((r) => r.status === "flagged" || !!r.qualityNotes)
     : rows;
 
   const activeRow = rows.find((r) => r.id === photoModal.rowId);
@@ -48,7 +48,7 @@ const FlowerTable = ({ rows, role, filter = "all" }: FlowerTableProps) => {
                 key={row.id}
                 className={cn(
                   "border-b border-border last:border-0",
-                  !row.received && "bg-warning/5",
+                  row.status !== "approved" && "bg-warning/5",
                   row.qualityNotes && "bg-destructive/5"
                 )}
               >
@@ -68,13 +68,13 @@ const FlowerTable = ({ rows, role, filter = "all" }: FlowerTableProps) => {
                 <td className="py-2.5 px-2 text-center">
                   {role === "freelancer" ? (
                     <button className="inline-flex items-center justify-center">
-                      {row.received ? (
+                      {row.status === "approved" ? (
                         <CheckCircle2 className="w-4 h-4 text-success" />
                       ) : (
                         <Circle className="w-4 h-4 text-muted-foreground" />
                       )}
                     </button>
-                  ) : row.received ? (
+                  ) : row.status === "approved" ? (
                     <CheckCircle2 className="w-4 h-4 text-success mx-auto" />
                   ) : (
                     <Circle className="w-4 h-4 text-muted-foreground mx-auto" />
