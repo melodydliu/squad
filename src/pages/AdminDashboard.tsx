@@ -1,30 +1,52 @@
 import { useState } from "react";
 import AppLayout from "@/components/AppLayout";
 import ProjectCard from "@/components/ProjectCard";
-import StatusBadge from "@/components/StatusBadge";
-import { mockProjects, ProjectStatus } from "@/data/mockData";
+import { mockProjects, ProjectStatus, getAssignedSubCategory, getAttentionFlags } from "@/data/mockData";
 import { motion } from "framer-motion";
 
-const statusFilters: { label: string; value: ProjectStatus | "all" }[] = [
+type FilterValue = "all" | ProjectStatus;
+
+const statusFilters: { label: string; value: FilterValue }[] = [
   { label: "All", value: "all" },
-  { label: "Open", value: "open" },
-  { label: "In Progress", value: "in_progress" },
-  { label: "Awaiting", value: "awaiting_approval" },
+  { label: "Unassigned", value: "unassigned" },
+  { label: "Assigned", value: "assigned" },
   { label: "Completed", value: "completed" },
 ];
 
 const AdminDashboard = () => {
-  const [filter, setFilter] = useState<ProjectStatus | "all">("all");
+  const [filter, setFilter] = useState<FilterValue>("all");
 
   const filtered = filter === "all"
     ? mockProjects
     : mockProjects.filter((p) => p.status === filter);
 
+  // For assigned filter, group into upcoming & in_progress
+  const assignedUpcoming = filtered.filter(
+    (p) => p.status === "assigned" && getAssignedSubCategory(p) === "upcoming"
+  );
+  const assignedInProgress = filtered.filter(
+    (p) => p.status === "assigned" && getAssignedSubCategory(p) === "in_progress"
+  );
+  const showAssignedGroups = filter === "assigned" || filter === "all";
+  const nonAssigned = filtered.filter((p) => p.status !== "assigned");
+
   const stats = {
-    active: mockProjects.filter((p) => ["open", "in_progress", "awaiting_freelancer"].includes(p.status)).length,
-    awaiting: mockProjects.filter((p) => p.status === "awaiting_approval").length,
+    unassigned: mockProjects.filter((p) => p.status === "unassigned").length,
+    needsReview: mockProjects.filter((p) => getAttentionFlags(p).needsReview).length,
     completed: mockProjects.filter((p) => p.status === "completed").length,
   };
+
+  const renderProjectList = (projects: typeof mockProjects, startIndex = 0) =>
+    projects.map((project, i) => (
+      <motion.div
+        key={project.id}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: (startIndex + i) * 0.05 }}
+      >
+        <ProjectCard project={project} role="admin" />
+      </motion.div>
+    ));
 
   return (
     <AppLayout role="admin" title="Dashboard">
@@ -32,8 +54,8 @@ const AdminDashboard = () => {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: "Active", value: stats.active, color: "bg-primary/10 text-primary" },
-            { label: "Awaiting", value: stats.awaiting, color: "bg-accent text-accent-foreground" },
+            { label: "Unassigned", value: stats.unassigned, color: "bg-warning/10 text-warning" },
+            { label: "Needs Review", value: stats.needsReview, color: "bg-accent text-accent-foreground" },
             { label: "Done", value: stats.completed, color: "bg-success/10 text-success" },
           ].map((stat) => (
             <div key={stat.label} className={`rounded-lg p-3 text-center ${stat.color}`}>
@@ -61,17 +83,45 @@ const AdminDashboard = () => {
         </div>
 
         {/* Project List */}
-        <div className="space-y-3">
-          {filtered.map((project, i) => (
-            <motion.div
-              key={project.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-            >
-              <ProjectCard project={project} role="admin" />
-            </motion.div>
-          ))}
+        <div className="space-y-5">
+          {/* When showing assigned groups */}
+          {showAssignedGroups && assignedInProgress.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">In Progress</h2>
+              {renderProjectList(assignedInProgress)}
+            </div>
+          )}
+
+          {showAssignedGroups && assignedUpcoming.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Upcoming</h2>
+              {renderProjectList(assignedUpcoming, assignedInProgress.length)}
+            </div>
+          )}
+
+          {/* Non-assigned projects (when filter is "all" or specific non-assigned filter) */}
+          {filter !== "assigned" && nonAssigned.length > 0 && (
+            <div className="space-y-3">
+              {filter === "all" && (nonAssigned.some(p => p.status === "unassigned") || nonAssigned.some(p => p.status === "completed")) && (
+                <>
+                  {nonAssigned.filter(p => p.status === "unassigned").length > 0 && (
+                    <div className="space-y-3">
+                      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Unassigned</h2>
+                      {renderProjectList(nonAssigned.filter(p => p.status === "unassigned"), assignedInProgress.length + assignedUpcoming.length)}
+                    </div>
+                  )}
+                  {nonAssigned.filter(p => p.status === "completed").length > 0 && (
+                    <div className="space-y-3">
+                      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Completed</h2>
+                      {renderProjectList(nonAssigned.filter(p => p.status === "completed"), assignedInProgress.length + assignedUpcoming.length + nonAssigned.filter(p => p.status === "unassigned").length)}
+                    </div>
+                  )}
+                </>
+              )}
+              {filter !== "all" && renderProjectList(nonAssigned)}
+            </div>
+          )}
+
           {filtered.length === 0 && (
             <div className="text-center py-12 text-muted-foreground text-sm">
               No projects match this filter

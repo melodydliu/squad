@@ -1,9 +1,12 @@
 import { Flower2, MapPin, Calendar, DollarSign, Clock, User, Camera, Package, CheckCircle2, AlertCircle, Eye } from "lucide-react";
 
-export type ProjectStatus = "open" | "awaiting_freelancer" | "in_progress" | "awaiting_approval" | "completed";
+export type ProjectStatus = "unassigned" | "assigned" | "completed";
 export type DeliveryMethod = "ship" | "pickup";
 export type TransportMethod = "personal_vehicle" | "uhaul_rental";
 export type QualityStatus = "good" | "issue";
+
+// Derived sub-category for assigned projects
+export type AssignedSubCategory = "upcoming" | "in_progress";
 
 export interface Project {
   id: string;
@@ -61,12 +64,63 @@ export interface Notification {
 }
 
 export const STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string; bgColor: string }> = {
-  open: { label: "Open", color: "text-info", bgColor: "bg-info/10" },
-  awaiting_freelancer: { label: "Awaiting Freelancer", color: "text-warning", bgColor: "bg-warning/10" },
-  in_progress: { label: "In Progress", color: "text-primary", bgColor: "bg-primary/10" },
-  awaiting_approval: { label: "Awaiting Approval", color: "text-blush-dark", bgColor: "bg-accent" },
+  unassigned: { label: "Unassigned", color: "text-warning", bgColor: "bg-warning/10" },
+  assigned: { label: "Assigned", color: "text-primary", bgColor: "bg-primary/10" },
   completed: { label: "Completed", color: "text-success", bgColor: "bg-success/10" },
 };
+
+/** Derive sub-category for assigned projects based on event dates */
+export function getAssignedSubCategory(project: Project): AssignedSubCategory | null {
+  if (project.status !== "assigned") return null;
+  const now = new Date();
+  const start = new Date(project.dateStart);
+  // Consider "in progress" if event start date has passed
+  if (now >= start) return "in_progress";
+  return "upcoming";
+}
+
+/** Check if a project needs admin attention */
+export interface AttentionFlag {
+  needsReview: boolean;
+  reasons: string[];
+  /** Which tab to auto-scroll to: 'inventory' or 'designs' */
+  reviewTab?: "inventory" | "designs";
+}
+
+export function getAttentionFlags(project: Project): AttentionFlag {
+  if (project.status !== "assigned") return { needsReview: false, reasons: [] };
+
+  const sub = getAssignedSubCategory(project);
+  if (sub !== "in_progress") return { needsReview: false, reasons: [] };
+
+  const reasons: string[] = [];
+  let reviewTab: "inventory" | "designs" | undefined;
+
+  // Inventory submitted but not yet quality-checked or has an issue
+  if (project.flowersConfirmed && project.hardGoodsConfirmed && !project.qualityStatus) {
+    reasons.push("Inventory confirmation submitted");
+    reviewTab = "inventory";
+  }
+
+  // Quality issue reported
+  if (project.qualityStatus === "issue") {
+    reasons.push("Quality issue reported");
+    reviewTab = reviewTab || "inventory";
+  }
+
+  // Designs uploaded awaiting approval
+  const pendingDesigns = project.designs.filter((d) => !d.approved && !d.revisionRequested);
+  if (pendingDesigns.length > 0) {
+    reasons.push(`${pendingDesigns.length} design${pendingDesigns.length > 1 ? "s" : ""} awaiting approval`);
+    reviewTab = reviewTab || "designs";
+  }
+
+  return {
+    needsReview: reasons.length > 0,
+    reasons,
+    reviewTab,
+  };
+}
 
 export const mockFreelancers: Freelancer[] = [
   {
@@ -114,7 +168,7 @@ export const mockProjects: Project[] = [
     moodDescription: "Romantic, organic, garden-style with soft pastels and lots of greenery. Think English garden meets Southern charm.",
     deliveryMethod: "ship",
     transportMethod: "personal_vehicle",
-    status: "open",
+    status: "unassigned",
     inspirationPhotos: [
       "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=400",
       "https://images.unsplash.com/photo-1522748906645-95d8adfd52c7?w=400",
@@ -130,8 +184,8 @@ export const mockProjects: Project[] = [
   {
     id: "p2",
     eventName: "Luxe Corporate Gala",
-    dateStart: "2026-03-22",
-    dateEnd: "2026-03-22",
+    dateStart: "2026-02-10",
+    dateEnd: "2026-02-10",
     time: "6:00 PM",
     location: "The Grand Ballroom, Atlanta, GA",
     pay: 1200,
@@ -140,7 +194,7 @@ export const mockProjects: Project[] = [
     moodDescription: "Dramatic, luxe, modern. Deep burgundy, white, and gold accents.",
     deliveryMethod: "pickup",
     transportMethod: "uhaul_rental",
-    status: "in_progress",
+    status: "assigned",
     inspirationPhotos: [
       "https://images.unsplash.com/photo-1478146059778-26028b07395a?w=400",
     ],
@@ -170,7 +224,7 @@ export const mockProjects: Project[] = [
     moodDescription: "Soft, whimsical, spring garden. Lavender, soft yellow, white.",
     deliveryMethod: "ship",
     transportMethod: "personal_vehicle",
-    status: "awaiting_approval",
+    status: "assigned",
     inspirationPhotos: [
       "https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=400",
     ],

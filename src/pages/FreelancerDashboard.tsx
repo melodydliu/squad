@@ -9,7 +9,7 @@ const FREELANCER_ID = "f1"; // Simulated logged-in freelancer
 const FreelancerDashboard = () => {
   const [tab, setTab] = useState<"available" | "my">("available");
 
-  const availableProjects = mockProjects.filter((p) => p.status === "open");
+  const availableProjects = mockProjects.filter((p) => p.status === "unassigned");
   const myProjects = mockProjects.filter(
     (p) => p.assignedFreelancerId === FREELANCER_ID || p.interestedFreelancerIds.includes(FREELANCER_ID)
   );
