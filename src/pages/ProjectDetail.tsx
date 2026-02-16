@@ -147,11 +147,11 @@ const OverviewTab = ({ project, role, assignedFreelancers }: { project: Project;
         )}
       </div>
 
-      {/* Timeline */}
-      {show("timeline", !!project.timeline) && (
+      {/* Description */}
+      {show("description", !!project.description) && (
         <div className="bg-card rounded-lg border border-border p-4 space-y-2">
-          <FieldHeader label="Timeline" visible={v.timeline !== false} fieldKey="timeline" role={role} />
-          <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{project.timeline}</p>
+          <FieldHeader label="Description" visible={v.description !== false} fieldKey="description" role={role} />
+          <p className="text-sm text-muted-foreground leading-relaxed">{project.description}</p>
         </div>
       )}
 
@@ -170,14 +170,6 @@ const OverviewTab = ({ project, role, assignedFreelancers }: { project: Project;
         </div>
       )}
 
-      {/* Description */}
-      {show("description", !!project.description) && (
-        <div className="bg-card rounded-lg border border-border p-4 space-y-2">
-          <FieldHeader label="Description" visible={v.description !== false} fieldKey="description" role={role} />
-          <p className="text-sm text-muted-foreground leading-relaxed">{project.description}</p>
-        </div>
-      )}
-
       {/* Design Guide */}
       {show("designGuide", !!project.designGuide) && (
         <div className="bg-card rounded-lg border border-border p-4 space-y-2">
@@ -185,6 +177,14 @@ const OverviewTab = ({ project, role, assignedFreelancers }: { project: Project;
           <a href={project.designGuide} target="_blank" rel="noopener noreferrer" className="text-sm text-primary underline break-all">
             {project.designGuide}
           </a>
+        </div>
+      )}
+
+      {/* Timeline */}
+      {show("timeline", !!project.timeline) && (
+        <div className="bg-card rounded-lg border border-border p-4 space-y-2">
+          <FieldHeader label="Timeline" visible={v.timeline !== false} fieldKey="timeline" role={role} />
+          <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{project.timeline}</p>
         </div>
       )}
 
