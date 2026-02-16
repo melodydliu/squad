@@ -38,18 +38,7 @@ const NotificationsPage = () => {
       <div className="space-y-3">
         {/* Action bar */}
         {notifications.length > 0 && (
-          <div className="flex items-center justify-between">
-            {unreadCount > 0 ? (
-              <button
-                onClick={markAllRead}
-                className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
-              >
-                <CheckCheck className="w-3.5 h-3.5" />
-                Mark all read
-              </button>
-            ) : (
-              <span />
-            )}
+          <div className="flex items-center justify-end">
             <button
               onClick={clearAll}
               className="text-xs font-medium text-muted-foreground hover:text-destructive transition-colors"
