@@ -1,0 +1,73 @@
+import { Project, mockFreelancers } from "@/data/mockData";
+import StatusBadge from "./StatusBadge";
+import { Calendar, MapPin, DollarSign, Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+
+interface ProjectCardProps {
+  project: Project;
+  role: "admin" | "freelancer";
+}
+
+const ProjectCard = ({ project, role }: ProjectCardProps) => {
+  const navigate = useNavigate();
+  const assignedFreelancer = project.assignedFreelancerId
+    ? mockFreelancers.find((f) => f.id === project.assignedFreelancerId)
+    : null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={() => navigate(`/project/${project.id}?role=${role}`)}
+      className="bg-card rounded-lg shadow-card hover:shadow-card-hover transition-all duration-200 cursor-pointer border border-border overflow-hidden"
+    >
+      {project.inspirationPhotos.length > 0 && (
+        <div className="h-32 overflow-hidden">
+          <img
+            src={project.inspirationPhotos[0]}
+            alt={project.eventName}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+      <div className="p-4 space-y-3">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="font-display text-base font-semibold text-foreground leading-tight">
+            {project.eventName}
+          </h3>
+          <StatusBadge status={project.status} />
+        </div>
+
+        <div className="space-y-1.5 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-3.5 h-3.5" />
+            <span>{new Date(project.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} · {project.time}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <MapPin className="w-3.5 h-3.5" />
+            <span className="truncate">{project.location}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <DollarSign className="w-3.5 h-3.5" />
+            <span className="font-medium text-foreground">${project.pay}</span>
+          </div>
+        </div>
+
+        {role === "admin" && (
+          <div className="flex items-center gap-2 pt-1 border-t border-border">
+            <Users className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">
+              {assignedFreelancer
+                ? `Assigned: ${assignedFreelancer.name}`
+                : `${project.interestedFreelancerIds.length} interested`}
+            </span>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
+export default ProjectCard;
