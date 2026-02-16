@@ -546,12 +546,10 @@ const FloralItemDesignCard = ({
   item,
   design,
   role
-
-
-
-
 }: {item: FloralItem;design?: FloralItemDesign;role: string;}) => {
   const hasPhotos = design && design.photos.length > 0;
+  const [noteValue, setNoteValue] = useState(design?.freelancerNote || "");
+  const [isEditingNote, setIsEditingNote] = useState(false);
 
   return (
     <div data-item-id={design?.id} className="bg-card rounded-lg border border-border overflow-hidden transition-all duration-500">
@@ -586,9 +584,44 @@ const FloralItemDesignCard = ({
           </div>
 
           {/* Freelancer Note */}
-          {design.freelancerNote &&
-        <p className="text-sm text-muted-foreground italic">"{design.freelancerNote}"</p>
-        }
+          {role === "freelancer" && hasPhotos ? (
+            isEditingNote ? (
+              <div className="space-y-2">
+                <textarea
+                  value={noteValue}
+                  onChange={(e) => setNoteValue(e.target.value)}
+                  placeholder="Add a note about this design..."
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+                  rows={2}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setIsEditingNote(false)}
+                    className="flex-1 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => { setNoteValue(design?.freelancerNote || ""); setIsEditingNote(false); }}
+                    className="py-1.5 px-3 rounded-lg bg-muted text-muted-foreground text-xs font-medium"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsEditingNote(true)}
+                className="w-full text-left text-sm text-muted-foreground italic hover:text-foreground transition-colors"
+              >
+                {noteValue ? `"${noteValue}"` : "+ Add a note..."}
+              </button>
+            )
+          ) : (
+            design?.freelancerNote && (
+              <p className="text-sm text-muted-foreground italic">"{design.freelancerNote}"</p>
+            )
+          )}
 
           {/* Admin Note / Revision Note */}
           {design.revisionRequested && design.adminNote &&
