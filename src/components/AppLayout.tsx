@@ -1,6 +1,6 @@
 import { ReactNode, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Flower2, LayoutDashboard, Plus, Bell, User, LogOut, ChevronLeft } from "lucide-react";
+import { Flower2, LayoutDashboard, Plus, Bell, User, LogOut, ChevronLeft, Settings } from "lucide-react";
 import { mockNotifications } from "@/data/mockData";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -49,12 +49,20 @@ const AppLayout = ({ children, title, showBack, role }: AppLayoutProps) => {
               {title || "Bloom Studio"}
             </h1>
           </div>
-          <button
-            onClick={() => navigate("/")}
-            className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => navigate(`/${role}/settings`)}
+              className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => navigate("/")}
+              className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </header>
 
