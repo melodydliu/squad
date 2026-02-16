@@ -9,10 +9,14 @@ const FREELANCER_ID = "f1"; // Simulated logged-in freelancer
 const FreelancerDashboard = () => {
   const [tab, setTab] = useState<"available" | "my">("available");
 
-  const availableProjects = mockProjects.filter((p) => p.status === "unassigned");
-  const myProjects = mockProjects.filter(
-    (p) => p.assignedFreelancerIds.includes(FREELANCER_ID) || p.interestedFreelancerIds.includes(FREELANCER_ID)
-  );
+  const availableProjects = mockProjects
+    .filter((p) => p.status === "unassigned")
+    .sort((a, b) => new Date(a.dateStart).getTime() - new Date(b.dateStart).getTime());
+  const myProjects = mockProjects
+    .filter(
+      (p) => p.assignedFreelancerIds.includes(FREELANCER_ID) || p.interestedFreelancerIds.includes(FREELANCER_ID)
+    )
+    .sort((a, b) => new Date(a.dateStart).getTime() - new Date(b.dateStart).getTime());
 
   const projects = tab === "available" ? availableProjects : myProjects;
 
