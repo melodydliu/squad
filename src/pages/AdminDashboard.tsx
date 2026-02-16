@@ -57,7 +57,7 @@ const AdminDashboard = () => {
     <AppLayout role="admin" title="Dashboard">
       <div className="space-y-5">
         {/* Filters */}
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+        <div className="flex gap-2 overflow-x-auto pt-2 pb-1 -mx-1 px-1 scrollbar-hide">
           {statusFilters.map((f) => {
             const hasReviewDot = f.value === "assigned" && assignedNeedsReview > 0;
             return (
