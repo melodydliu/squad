@@ -25,7 +25,7 @@ const StatusBadge = ({ status, project, className }: StatusBadgeProps) => {
           className
         )}
       >
-        Partially Filled
+        Partially Assigned
       </span>
     );
   }
