@@ -45,6 +45,8 @@ export interface Project {
   createdAt: string;
 }
 
+export type InventoryItemStatus = "approved" | "flagged";
+
 export interface FlowerInventoryRow {
   id: string;
   flower: string;
@@ -52,18 +54,22 @@ export interface FlowerInventoryRow {
   stemsInRecipe: number;
   totalOrdered: number;
   extras: number;
-  received: boolean;
+  status?: InventoryItemStatus;
   qualityNotes?: string;
   photoUrl?: string;
+  updatedBy?: string;
+  updatedAt?: string;
 }
 
 export interface HardGoodInventoryRow {
   id: string;
   item: string;
   quantity: number;
-  received: boolean;
+  status?: InventoryItemStatus;
   notes?: string;
   photoUrl?: string;
+  updatedBy?: string;
+  updatedAt?: string;
 }
 
 export interface FloralItem {
@@ -330,14 +336,14 @@ export const mockProjects: Project[] = [
       { id: "fid2", floralItemId: "fi7", photos: [{ id: "dp2", photoUrl: "https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=400" }], freelancerNote: "Stage left arrangement", approved: false, revisionRequested: false },
     ],
     flowerInventory: [
-      { id: "fl1", flower: "Burgundy Dahlia", color: "Deep Burgundy", stemsInRecipe: 36, totalOrdered: 40, extras: 4, received: true },
-      { id: "fl2", flower: "White Rose", color: "White", stemsInRecipe: 48, totalOrdered: 55, extras: 7, received: true },
-      { id: "fl3", flower: "Gold Spray Rose", color: "Gold", stemsInRecipe: 24, totalOrdered: 30, extras: 6, received: false, qualityNotes: "Some stems arrived wilted" },
+      { id: "fl1", flower: "Burgundy Dahlia", color: "Deep Burgundy", stemsInRecipe: 36, totalOrdered: 40, extras: 4, status: "approved", updatedBy: "f2", updatedAt: "2026-02-10T14:30:00" },
+      { id: "fl2", flower: "White Rose", color: "White", stemsInRecipe: 48, totalOrdered: 55, extras: 7, status: "approved", updatedBy: "f2", updatedAt: "2026-02-10T14:32:00" },
+      { id: "fl3", flower: "Gold Spray Rose", color: "Gold", stemsInRecipe: 24, totalOrdered: 30, extras: 6, status: "flagged", qualityNotes: "Some stems arrived wilted", updatedBy: "f2", updatedAt: "2026-02-10T15:00:00" },
     ],
     hardGoodInventory: [
-      { id: "hg1", item: "Tall Gold Vase", quantity: 12, received: true },
-      { id: "hg2", item: "Pillar Candle Holder", quantity: 24, received: true },
-      { id: "hg3", item: "Gold Charger Plate", quantity: 50, received: false, notes: "Vendor confirmed delayed shipment" },
+      { id: "hg1", item: "Tall Gold Vase", quantity: 12, status: "approved", updatedBy: "f2", updatedAt: "2026-02-10T14:35:00" },
+      { id: "hg2", item: "Pillar Candle Holder", quantity: 24, status: "approved", updatedBy: "f2", updatedAt: "2026-02-10T14:36:00" },
+      { id: "hg3", item: "Gold Charger Plate", quantity: 50, status: "flagged", notes: "Vendor confirmed delayed shipment", updatedBy: "f2", updatedAt: "2026-02-10T15:10:00" },
     ],
     fieldVisibility: { ...DEFAULT_VISIBILITY },
     createdAt: "2026-02-10",

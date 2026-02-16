@@ -289,12 +289,11 @@ const FieldHeader = ({ label, visible, fieldKey, role, icon }: { label: string; 
   </div>
 );
 
-type InventoryFilter = "all" | "not_received" | "issues" | "received";
+type InventoryFilter = "all" | "approved" | "flagged";
 const FILTER_OPTIONS: { key: InventoryFilter; label: string }[] = [
   { key: "all", label: "All" },
-  { key: "not_received", label: "Pending" },
-  { key: "issues", label: "Issues" },
-  { key: "received", label: "Received" },
+  { key: "approved", label: "Approved" },
+  { key: "flagged", label: "Flagged" },
 ];
 
 const InventoryTab = ({ project, role }: { project: Project; role: string }) => {
@@ -302,8 +301,8 @@ const InventoryTab = ({ project, role }: { project: Project; role: string }) => 
   const [hardGoodFilter, setHardGoodFilter] = useState<InventoryFilter>("all");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<"flowers" | "hardgoods" | null>(null);
 
-  const flowerIssues = project.flowerInventory.filter((r) => !r.received || !!r.qualityNotes).length;
-  const hardGoodIssues = project.hardGoodInventory.filter((r) => !r.received || !!r.notes).length;
+  const flowerFlagged = project.flowerInventory.filter((r) => r.status === "flagged").length;
+  const hardGoodFlagged = project.hardGoodInventory.filter((r) => r.status === "flagged").length;
   const hasFlowers = project.flowerInventory.length > 0;
   const hasHardGoods = project.hardGoodInventory.length > 0;
 
@@ -316,9 +315,9 @@ const InventoryTab = ({ project, role }: { project: Project; role: string }) => 
             <div className="flex items-center gap-2">
               <Flower2 className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-semibold text-foreground">Flowers</h3>
-              {flowerIssues > 0 && (
-                <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full">
-                  {flowerIssues}
+              {flowerFlagged > 0 && (
+                <span className="text-[10px] font-semibold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">
+                  {flowerFlagged} flagged
                 </span>
               )}
             </div>
@@ -374,9 +373,9 @@ const InventoryTab = ({ project, role }: { project: Project; role: string }) => 
             <div className="flex items-center gap-2">
               <Package className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-semibold text-foreground">Hard Goods</h3>
-              {hardGoodIssues > 0 && (
-                <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full">
-                  {hardGoodIssues}
+              {hardGoodFlagged > 0 && (
+                <span className="text-[10px] font-semibold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">
+                  {hardGoodFlagged} flagged
                 </span>
               )}
             </div>
@@ -429,21 +428,21 @@ const InventoryTab = ({ project, role }: { project: Project; role: string }) => 
           <div className="grid grid-cols-3 gap-3 text-center">
             <div>
               <div className="text-lg font-bold text-foreground font-display">
-                {project.flowerInventory.filter((r) => r.received).length + project.hardGoodInventory.filter((r) => r.received).length}
+                {project.flowerInventory.length + project.hardGoodInventory.length}
               </div>
-              <div className="text-[10px] text-muted-foreground font-medium">Received</div>
+              <div className="text-[10px] text-muted-foreground font-medium">Total</div>
             </div>
             <div>
-              <div className="text-lg font-bold text-warning font-display">
-                {project.flowerInventory.filter((r) => !r.received).length + project.hardGoodInventory.filter((r) => !r.received).length}
+              <div className="text-lg font-bold text-success font-display">
+                {project.flowerInventory.filter((r) => r.status === "approved").length + project.hardGoodInventory.filter((r) => r.status === "approved").length}
               </div>
-              <div className="text-[10px] text-muted-foreground font-medium">Pending</div>
+              <div className="text-[10px] text-muted-foreground font-medium">Approved</div>
             </div>
             <div>
               <div className="text-lg font-bold text-destructive font-display">
-                {flowerIssues + hardGoodIssues}
+                {flowerFlagged + hardGoodFlagged}
               </div>
-              <div className="text-[10px] text-muted-foreground font-medium">Issues</div>
+              <div className="text-[10px] text-muted-foreground font-medium">Flagged</div>
             </div>
           </div>
         </div>
