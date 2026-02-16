@@ -3,6 +3,7 @@ import { Flower2, MapPin, Calendar, DollarSign, Clock, User, Camera, Package, Ch
 export type ProjectStatus = "unassigned" | "assigned" | "completed";
 export type TransportMethod = "personal_vehicle" | "uhaul_rental";
 export type QualityStatus = "good" | "issue";
+export type DesignStatus = "in_review" | "needs_revision" | "approved";
 export type ServiceLevel = "design" | "delivery" | "setup" | "flip" | "strike";
 
 // Derived sub-category for assigned projects
@@ -79,6 +80,15 @@ export interface FloralItem {
   quantity: number;
 }
 
+export interface DesignRevision {
+  id: string;
+  photoUrl: string;
+  note?: string;
+  timestamp: string;
+  status: DesignStatus;
+  adminNote?: string;
+}
+
 export interface FloralItemDesign {
   id: string;
   floralItemId: string;
@@ -87,6 +97,8 @@ export interface FloralItemDesign {
   approved: boolean;
   revisionRequested: boolean;
   adminNote?: string;
+  designStatus: DesignStatus;
+  revisionHistory: DesignRevision[];
 }
 
 export interface DesignPhoto {
@@ -204,10 +216,17 @@ export function getAttentionFlags(project: Project): AttentionFlag {
     reviewTab = reviewTab || "designs";
   }
 
-  // Floral item designs awaiting approval
-  const pendingFloralDesigns = project.floralItemDesigns.filter((d) => d.photos.length > 0 && !d.approved && !d.revisionRequested);
+  // Floral item designs awaiting approval (using designStatus)
+  const pendingFloralDesigns = project.floralItemDesigns.filter((d) => d.photos.length > 0 && d.designStatus === "in_review");
   if (pendingFloralDesigns.length > 0) {
-    reasons.push(`${pendingFloralDesigns.length} floral design${pendingFloralDesigns.length > 1 ? "s" : ""} awaiting approval`);
+    reasons.push(`${pendingFloralDesigns.length} floral design${pendingFloralDesigns.length > 1 ? "s" : ""} awaiting review`);
+    reviewTab = reviewTab || "designs";
+  }
+
+  // Floral item designs needing revision (unresolved)
+  const revisionDesigns = project.floralItemDesigns.filter((d) => d.designStatus === "needs_revision");
+  if (revisionDesigns.length > 0) {
+    reasons.push(`${revisionDesigns.length} design${revisionDesigns.length > 1 ? "s" : ""} need revision`);
     reviewTab = reviewTab || "designs";
   }
 
@@ -354,8 +373,8 @@ export const mockProjects: Project[] = [
       { id: "fi8", name: "Entrance Installation", quantity: 2 },
     ],
     floralItemDesigns: [
-      { id: "fid1", floralItemId: "fi6", photos: [{ id: "dp1", photoUrl: "https://images.unsplash.com/photo-1487530811176-3780de880c2d?w=400" }], freelancerNote: "Centerpiece sample", approved: true, revisionRequested: false },
-      { id: "fid2", floralItemId: "fi7", photos: [{ id: "dp2", photoUrl: "https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=400" }], freelancerNote: "Stage left arrangement", approved: false, revisionRequested: false },
+      { id: "fid1", floralItemId: "fi6", photos: [{ id: "dp1", photoUrl: "https://images.unsplash.com/photo-1487530811176-3780de880c2d?w=400" }], freelancerNote: "Centerpiece sample", approved: true, revisionRequested: false, designStatus: "approved", revisionHistory: [] },
+      { id: "fid2", floralItemId: "fi7", photos: [{ id: "dp2", photoUrl: "https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=400" }], freelancerNote: "Stage left arrangement", approved: false, revisionRequested: false, designStatus: "in_review", revisionHistory: [] },
     ],
     flowerInventory: [
       { id: "fl1", flower: "Burgundy Dahlia", color: "Deep Burgundy", stemsInRecipe: 36, totalOrdered: 40, extras: 4, status: "approved", updatedBy: "f2", updatedAt: "2026-02-10T14:30:00" },
@@ -409,7 +428,7 @@ export const mockProjects: Project[] = [
       { id: "fi11", name: "Gift Table Decor", quantity: 1 },
     ],
     floralItemDesigns: [
-      { id: "fid3", floralItemId: "fi10", photos: [{ id: "dp3", photoUrl: "https://images.unsplash.com/photo-1455659817273-f96807779a8a?w=400" }], freelancerNote: "Welcome arrangement", approved: false, revisionRequested: true, adminNote: "Beautiful! Can we add a few more stems of lavender?" },
+      { id: "fid3", floralItemId: "fi10", photos: [{ id: "dp3", photoUrl: "https://images.unsplash.com/photo-1455659817273-f96807779a8a?w=400" }], freelancerNote: "Welcome arrangement", approved: false, revisionRequested: true, adminNote: "Beautiful! Can we add a few more stems of lavender?", designStatus: "needs_revision", revisionHistory: [{ id: "rv1", photoUrl: "https://images.unsplash.com/photo-1455659817273-f96807779a8a?w=400", note: "Welcome arrangement", timestamp: "2026-02-12T10:00:00", status: "needs_revision", adminNote: "Beautiful! Can we add a few more stems of lavender?" }] },
     ],
     flowerInventory: [],
     hardGoodInventory: [],
@@ -451,7 +470,7 @@ export const mockProjects: Project[] = [
       { id: "fi13", name: "Sweetheart Table Arrangement", quantity: 1 },
     ],
     floralItemDesigns: [
-      { id: "fid4", floralItemId: "fi12", photos: [{ id: "dp4", photoUrl: "https://images.unsplash.com/photo-1526047932273-341f2a7631f9?w=400" }], approved: true, revisionRequested: false },
+      { id: "fid4", floralItemId: "fi12", photos: [{ id: "dp4", photoUrl: "https://images.unsplash.com/photo-1526047932273-341f2a7631f9?w=400" }], approved: true, revisionRequested: false, designStatus: "approved", revisionHistory: [] },
     ],
     flowerInventory: [],
     hardGoodInventory: [],

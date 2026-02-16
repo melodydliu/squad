@@ -3,7 +3,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import StatusBadge from "@/components/StatusBadge";
 import FreelancerResponsePanel from "@/components/FreelancerResponsePanel";
-import { mockProjects, mockFreelancers, mockNotifications, Project, FloralItem, FloralItemDesign, FlowerInventoryRow, HardGoodInventoryRow, getAttentionFlags, getDesignersRemaining, SERVICE_LEVEL_OPTIONS, Notification } from "@/data/mockData";
+import { mockProjects, mockFreelancers, mockNotifications, Project, FloralItem, FloralItemDesign, FlowerInventoryRow, HardGoodInventoryRow, getAttentionFlags, getDesignersRemaining, SERVICE_LEVEL_OPTIONS, Notification, DesignStatus } from "@/data/mockData";
 import { Calendar, MapPin, DollarSign, Truck, Check, X, Camera, AlertCircle, CheckCircle2, Image, Clock, Car, Flower2, FileText, Phone, Eye, EyeOff, Briefcase, Package, Upload, RefreshCw, Trash2 } from "lucide-react";
 import CsvUpload from "@/components/inventory/CsvUpload";
 import FlowerCardList from "@/components/inventory/FlowerCard";
@@ -515,9 +515,24 @@ const InventoryTab = ({ project, role }: {project: Project;role: string;}) => {
 
 };
 
-const DesignsTab = ({ project, role }: {project: Project;role: string;}) => {
+const DESIGN_STATUS_CONFIG: Record<DesignStatus, { label: string; color: string; bgColor: string; icon: typeof CheckCircle2 }> = {
+  in_review: { label: "In Review", color: "text-info", bgColor: "bg-info/10", icon: Clock },
+  needs_revision: { label: "Needs Revision", color: "text-warning", bgColor: "bg-warning/10", icon: AlertCircle },
+  approved: { label: "Approved", color: "text-success", bgColor: "bg-success/10", icon: CheckCircle2 },
+};
+
+type DesignFilter = "all" | "in_review" | "needs_revision" | "approved";
+const DESIGN_FILTER_OPTIONS: { key: DesignFilter; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "in_review", label: "In Review" },
+  { key: "needs_revision", label: "Needs Revision" },
+  { key: "approved", label: "Approved" },
+];
+
+const DesignsTab = ({ project, role }: { project: Project; role: string }) => {
   const items = project.floralItems;
-  const designs = project.floralItemDesigns;
+  const [designs, setDesigns] = useState(project.floralItemDesigns);
+  const [filter, setFilter] = useState<DesignFilter>("all");
 
   if (items.length === 0) {
     return (
@@ -526,30 +541,147 @@ const DesignsTab = ({ project, role }: {project: Project;role: string;}) => {
           <Flower2 className="w-5 h-5 text-muted-foreground" />
         </div>
         <p className="text-sm text-muted-foreground">No floral items defined for this project</p>
-      </div>);
-
+      </div>
+    );
   }
+
+  const handleApproveDesign = (designId: string) => {
+    setDesigns((prev) =>
+      prev.map((d) =>
+        d.id === designId
+          ? { ...d, designStatus: "approved" as DesignStatus, approved: true, revisionRequested: false, adminNote: undefined }
+          : d
+      )
+    );
+    toast.success("Design approved!");
+  };
+
+  const handleRequestRevision = (designId: string, note: string) => {
+    setDesigns((prev) =>
+      prev.map((d) => {
+        if (d.id !== designId) return d;
+        const revision = {
+          id: `rv-${Date.now()}`,
+          photoUrl: d.photos[0]?.photoUrl || "",
+          note: d.freelancerNote,
+          timestamp: new Date().toISOString(),
+          status: "needs_revision" as DesignStatus,
+          adminNote: note,
+        };
+        return {
+          ...d,
+          designStatus: "needs_revision" as DesignStatus,
+          approved: false,
+          revisionRequested: true,
+          adminNote: note,
+          revisionHistory: [...d.revisionHistory, revision],
+        };
+      })
+    );
+    toast("Revision requested — freelancer will be notified.");
+  };
+
+  // Compute counts
+  const counts = {
+    in_review: designs.filter((d) => d.designStatus === "in_review").length,
+    needs_revision: designs.filter((d) => d.designStatus === "needs_revision").length,
+    approved: designs.filter((d) => d.designStatus === "approved").length,
+  };
+
+  // Filter items by their design status
+  const filteredItems = items.filter((item) => {
+    if (filter === "all") return true;
+    const design = designs.find((d) => d.floralItemId === item.id);
+    if (!design) return filter === "in_review"; // no design yet = show under "in_review" as pending
+    return design.designStatus === filter;
+  });
 
   return (
     <div className="space-y-4">
-      {items.map((item) => {
+      {/* Summary bar */}
+      {designs.length > 0 && (
+        <div className="bg-card rounded-lg border border-border p-4">
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div>
+              <div className="text-lg font-bold text-info font-display">{counts.in_review}</div>
+              <div className="text-[10px] text-muted-foreground font-medium">In Review</div>
+            </div>
+            <div>
+              <div className="text-lg font-bold text-warning font-display">{counts.needs_revision}</div>
+              <div className="text-[10px] text-muted-foreground font-medium">Revision</div>
+            </div>
+            <div>
+              <div className="text-lg font-bold text-success font-display">{counts.approved}</div>
+              <div className="text-[10px] text-muted-foreground font-medium">Approved</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Filters */}
+      {role === "admin" && designs.length > 0 && (
+        <div className="flex gap-1">
+          {DESIGN_FILTER_OPTIONS.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              className={cn(
+                "px-2.5 py-1 rounded-full text-[10px] font-medium transition-colors",
+                filter === f.key
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted"
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {filteredItems.map((item) => {
         const design = designs.find((d) => d.floralItemId === item.id);
         return (
-          <FloralItemDesignCard key={item.id} item={item} design={design} role={role} />);
-
+          <FloralItemDesignCard
+            key={item.id}
+            item={item}
+            design={design}
+            role={role}
+            onApprove={handleApproveDesign}
+            onRequestRevision={handleRequestRevision}
+          />
+        );
       })}
-    </div>);
 
+      {filteredItems.length === 0 && (
+        <p className="text-sm text-muted-foreground text-center py-6">No designs match this filter</p>
+      )}
+    </div>
+  );
 };
 
 const FloralItemDesignCard = ({
   item,
   design,
-  role
-}: {item: FloralItem;design?: FloralItemDesign;role: string;}) => {
+  role,
+  onApprove,
+  onRequestRevision,
+}: {
+  item: FloralItem;
+  design?: FloralItemDesign;
+  role: string;
+  onApprove: (id: string) => void;
+  onRequestRevision: (id: string, note: string) => void;
+}) => {
   const hasPhotos = design && design.photos.length > 0;
   const [noteValue, setNoteValue] = useState(design?.freelancerNote || "");
   const [isEditingNote, setIsEditingNote] = useState(false);
+  const [showRevisionInput, setShowRevisionInput] = useState(false);
+  const [revisionNote, setRevisionNote] = useState("");
+  const [showHistory, setShowHistory] = useState(false);
+
+  const status = design?.designStatus || "in_review";
+  const statusConfig = DESIGN_STATUS_CONFIG[status];
+  const StatusIcon = statusConfig.icon;
 
   return (
     <div data-item-id={design?.id} className="bg-card rounded-lg border border-border overflow-hidden transition-all duration-500">
@@ -560,27 +692,22 @@ const FloralItemDesignCard = ({
           <span className="text-sm font-semibold text-foreground">{item.name}</span>
           <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">×{item.quantity}</span>
         </div>
-        {design?.approved &&
-        <span className="flex items-center gap-1 text-xs text-success font-medium">
-            <CheckCircle2 className="w-3.5 h-3.5" /> Approved
+        {hasPhotos && (
+          <span className={cn("flex items-center gap-1 text-xs font-medium", statusConfig.color)}>
+            <StatusIcon className="w-3.5 h-3.5" /> {statusConfig.label}
           </span>
-        }
-        {design?.revisionRequested &&
-        <span className="flex items-center gap-1 text-xs text-warning font-medium">
-            <AlertCircle className="w-3.5 h-3.5" /> Revision
-          </span>
-        }
+        )}
       </div>
 
       {/* Photos Grid */}
-      {hasPhotos ?
-      <div className="p-3 space-y-3">
+      {hasPhotos ? (
+        <div className="p-3 space-y-3">
           <div className={`grid gap-2 ${design.photos.length === 1 ? "grid-cols-1" : design.photos.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
-            {design.photos.map((photo) =>
-          <div key={photo.id} className="rounded-lg overflow-hidden aspect-square">
+            {design.photos.map((photo) => (
+              <div key={photo.id} className="rounded-lg overflow-hidden aspect-square">
                 <img src={photo.photoUrl} alt={item.name} className="w-full h-full object-cover" />
               </div>
-          )}
+            ))}
           </div>
 
           {/* Freelancer Note */}
@@ -623,50 +750,129 @@ const FloralItemDesignCard = ({
             )
           )}
 
-          {/* Admin Note / Revision Note */}
-          {design.revisionRequested && design.adminNote &&
-        <div className="bg-warning/5 border border-warning/20 rounded-lg p-3">
-              <p className="text-xs font-medium text-warning mb-1">Admin Revision Note</p>
+          {/* Needs Revision — Admin note prominently shown */}
+          {status === "needs_revision" && design.adminNote && (
+            <div className="bg-warning/5 border border-warning/20 rounded-lg p-3">
+              <p className="text-xs font-medium text-warning mb-1">Revision Requested</p>
               <p className="text-sm text-foreground">{design.adminNote}</p>
             </div>
-        }
+          )}
+
+          {/* Freelancer: re-upload when revision requested */}
+          {role === "freelancer" && status === "needs_revision" && (
+            <button className="w-full py-2.5 rounded-lg bg-warning/10 border border-warning/20 text-warning text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-warning/15 transition-colors">
+              <RefreshCw className="w-3.5 h-3.5" />
+              Upload Revised Design
+            </button>
+          )}
 
           {/* Admin Actions */}
-          {role === "admin" && !design.approved && !design.revisionRequested &&
-        <div className="flex gap-2 pt-1">
-              <button className="flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-primary text-primary-foreground">
-                Approve
+          {role === "admin" && status === "in_review" && !showRevisionInput && (
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => onApprove(design.id)}
+                className="flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Check className="w-3.5 h-3.5" /> Approve
               </button>
-              <button className="flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-muted text-muted-foreground">
+              <button
+                onClick={() => setShowRevisionInput(true)}
+                className="flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-muted text-muted-foreground hover:bg-warning/10 hover:text-warning transition-colors"
+              >
                 Request Revision
               </button>
             </div>
-        }
+          )}
+
+          {/* Admin: Revision note input */}
+          {role === "admin" && showRevisionInput && (
+            <div className="space-y-2 bg-muted/50 rounded-lg p-3">
+              <p className="text-xs font-medium text-foreground">Revision Note</p>
+              <textarea
+                value={revisionNote}
+                onChange={(e) => setRevisionNote(e.target.value)}
+                placeholder="Describe what needs to change..."
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+                rows={2}
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    if (revisionNote.trim()) {
+                      onRequestRevision(design.id, revisionNote.trim());
+                      setRevisionNote("");
+                      setShowRevisionInput(false);
+                    }
+                  }}
+                  disabled={!revisionNote.trim()}
+                  className="flex-1 py-1.5 rounded-lg bg-warning text-foreground text-xs font-medium disabled:opacity-50"
+                >
+                  Send Revision Request
+                </button>
+                <button
+                  onClick={() => { setRevisionNote(""); setShowRevisionInput(false); }}
+                  className="py-1.5 px-3 rounded-lg bg-muted text-muted-foreground text-xs font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Revision History */}
+          {design.revisionHistory.length > 0 && (
+            <div>
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className="text-[10px] text-muted-foreground hover:text-foreground transition-colors font-medium"
+              >
+                {showHistory ? "Hide" : "Show"} revision history ({design.revisionHistory.length})
+              </button>
+              {showHistory && (
+                <div className="mt-2 space-y-2">
+                  {design.revisionHistory.map((rev) => (
+                    <div key={rev.id} className="bg-muted/50 rounded-lg p-2.5 text-xs space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className={cn("font-medium", DESIGN_STATUS_CONFIG[rev.status].color)}>
+                          {DESIGN_STATUS_CONFIG[rev.status].label}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {new Date(rev.timestamp).toLocaleDateString()}
+                        </span>
+                      </div>
+                      {rev.adminNote && <p className="text-muted-foreground">"{rev.adminNote}"</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Freelancer: upload more (max 3) */}
-          {role === "freelancer" && design.photos.length < 3 &&
-        <button className="w-full py-2 rounded-lg border border-dashed border-border text-xs font-medium text-muted-foreground hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-1.5">
+          {role === "freelancer" && status !== "needs_revision" && design.photos.length < 3 && (
+            <button className="w-full py-2 rounded-lg border border-dashed border-border text-xs font-medium text-muted-foreground hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-1.5">
               <Camera className="w-3.5 h-3.5" />
               Add Photo ({3 - design.photos.length} remaining)
             </button>
-        }
-        </div> : (
-
-      /* No photos uploaded yet */
-      <div className="p-4">
-          {role === "freelancer" ?
-        <button className="w-full py-6 rounded-lg border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors flex flex-col items-center gap-2">
+          )}
+        </div>
+      ) : (
+        /* No photos uploaded yet */
+        <div className="p-4">
+          {role === "freelancer" ? (
+            <button className="w-full py-6 rounded-lg border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors flex flex-col items-center gap-2">
               <Camera className="w-5 h-5" />
               <span className="text-xs font-medium">Upload Design Photos</span>
               <span className="text-[10px] text-muted-foreground">Up to 3 photos</span>
-            </button> :
-
-        <p className="text-sm text-muted-foreground text-center py-2">No designs uploaded yet</p>
-        }
-        </div>)
-      }
-    </div>);
-
+            </button>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-2">No designs uploaded yet</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default ProjectDetail;
