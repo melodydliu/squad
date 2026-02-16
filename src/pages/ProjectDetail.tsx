@@ -3,10 +3,10 @@ import { useParams, useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import StatusBadge from "@/components/StatusBadge";
 import { mockProjects, mockFreelancers, Project, FloralItem, FloralItemDesign, FlowerInventoryRow, HardGoodInventoryRow, getAttentionFlags, SERVICE_LEVEL_OPTIONS } from "@/data/mockData";
-import { Calendar, MapPin, DollarSign, Truck, Check, X, Camera, AlertCircle, CheckCircle2, Image, Clock, Car, Flower2, FileText, Phone, Eye, EyeOff, Briefcase, Package } from "lucide-react";
+import { Calendar, MapPin, DollarSign, Truck, Check, X, Camera, AlertCircle, CheckCircle2, Image, Clock, Car, Flower2, FileText, Phone, Eye, EyeOff, Briefcase, Package, Upload, RefreshCw, Trash2 } from "lucide-react";
 import CsvUpload from "@/components/inventory/CsvUpload";
-import FlowerTable from "@/components/inventory/FlowerTable";
-import HardGoodTable from "@/components/inventory/HardGoodTable";
+import FlowerCardList from "@/components/inventory/FlowerCard";
+import HardGoodCardList from "@/components/inventory/HardGoodCard";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -289,53 +289,78 @@ const FieldHeader = ({ label, visible, fieldKey, role, icon }: { label: string; 
   </div>
 );
 
+type InventoryFilter = "all" | "not_received" | "issues" | "received";
+const FILTER_OPTIONS: { key: InventoryFilter; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "not_received", label: "Pending" },
+  { key: "issues", label: "Issues" },
+  { key: "received", label: "Received" },
+];
+
 const InventoryTab = ({ project, role }: { project: Project; role: string }) => {
-  const [flowerFilter, setFlowerFilter] = useState<"all" | "issues">("all");
-  const [hardGoodFilter, setHardGoodFilter] = useState<"all" | "issues">("all");
+  const [flowerFilter, setFlowerFilter] = useState<InventoryFilter>("all");
+  const [hardGoodFilter, setHardGoodFilter] = useState<InventoryFilter>("all");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<"flowers" | "hardgoods" | null>(null);
 
   const flowerIssues = project.flowerInventory.filter((r) => !r.received || !!r.qualityNotes).length;
   const hardGoodIssues = project.hardGoodInventory.filter((r) => !r.received || !!r.notes).length;
+  const hasFlowers = project.flowerInventory.length > 0;
+  const hasHardGoods = project.hardGoodInventory.length > 0;
 
   return (
     <div className="space-y-4">
       {/* Flowers Section */}
       <div className="bg-card rounded-lg border border-border overflow-hidden">
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Flower2 className="w-4 h-4 text-primary" />
-            <h3 className="text-sm font-semibold text-foreground">Flowers</h3>
-            {flowerIssues > 0 && (
-              <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full">
-                {flowerIssues} issue{flowerIssues > 1 ? "s" : ""}
-              </span>
+        <div className="px-4 py-3 border-b border-border">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Flower2 className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">Flowers</h3>
+              {flowerIssues > 0 && (
+                <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full">
+                  {flowerIssues}
+                </span>
+              )}
+            </div>
+            {/* Admin CSV controls */}
+            {role === "admin" && hasFlowers && (
+              <div className="flex items-center gap-1">
+                <CsvUpload label="Replace" onParsed={() => {}} compact />
+                <button
+                  onClick={() => setShowDeleteConfirm("flowers")}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
+                  title="Delete CSV"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
             )}
           </div>
-          {project.flowerInventory.length > 0 && (
-            <div className="flex gap-1">
-              {(["all", "issues"] as const).map((f) => (
+          {/* Filters */}
+          {hasFlowers && (
+            <div className="flex gap-1 mt-2">
+              {FILTER_OPTIONS.map((f) => (
                 <button
-                  key={f}
-                  onClick={() => setFlowerFilter(f)}
+                  key={f.key}
+                  onClick={() => setFlowerFilter(f.key)}
                   className={cn(
-                    "px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors",
-                    flowerFilter === f
+                    "px-2.5 py-1 rounded-full text-[10px] font-medium transition-colors",
+                    flowerFilter === f.key
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-muted"
                   )}
                 >
-                  {f === "all" ? "All" : "Issues"}
+                  {f.label}
                 </button>
               ))}
             </div>
           )}
         </div>
-        <div className="p-4">
-          {project.flowerInventory.length > 0 ? (
-            <FlowerTable rows={project.flowerInventory} role={role as "admin" | "freelancer"} filter={flowerFilter} />
+        <div className="p-3">
+          {hasFlowers ? (
+            <FlowerCardList rows={project.flowerInventory} role={role as "admin" | "freelancer"} filter={flowerFilter} />
           ) : role === "admin" ? (
-            <CsvUpload label="Flowers" onParsed={(rows) => {
-              console.log("Flower CSV parsed:", rows);
-            }} />
+            <CsvUpload label="Flowers" onParsed={() => {}} />
           ) : (
             <p className="text-sm text-muted-foreground text-center py-4">No flower inventory uploaded yet</p>
           )}
@@ -344,42 +369,54 @@ const InventoryTab = ({ project, role }: { project: Project; role: string }) => 
 
       {/* Hard Goods Section */}
       <div className="bg-card rounded-lg border border-border overflow-hidden">
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Package className="w-4 h-4 text-primary" />
-            <h3 className="text-sm font-semibold text-foreground">Hard Goods</h3>
-            {hardGoodIssues > 0 && (
-              <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full">
-                {hardGoodIssues} issue{hardGoodIssues > 1 ? "s" : ""}
-              </span>
+        <div className="px-4 py-3 border-b border-border">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Package className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">Hard Goods</h3>
+              {hardGoodIssues > 0 && (
+                <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full">
+                  {hardGoodIssues}
+                </span>
+              )}
+            </div>
+            {role === "admin" && hasHardGoods && (
+              <div className="flex items-center gap-1">
+                <CsvUpload label="Replace" onParsed={() => {}} compact />
+                <button
+                  onClick={() => setShowDeleteConfirm("hardgoods")}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
+                  title="Delete CSV"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
             )}
           </div>
-          {project.hardGoodInventory.length > 0 && (
-            <div className="flex gap-1">
-              {(["all", "issues"] as const).map((f) => (
+          {hasHardGoods && (
+            <div className="flex gap-1 mt-2">
+              {FILTER_OPTIONS.map((f) => (
                 <button
-                  key={f}
-                  onClick={() => setHardGoodFilter(f)}
+                  key={f.key}
+                  onClick={() => setHardGoodFilter(f.key)}
                   className={cn(
-                    "px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors",
-                    hardGoodFilter === f
+                    "px-2.5 py-1 rounded-full text-[10px] font-medium transition-colors",
+                    hardGoodFilter === f.key
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-muted"
                   )}
                 >
-                  {f === "all" ? "All" : "Issues"}
+                  {f.label}
                 </button>
               ))}
             </div>
           )}
         </div>
-        <div className="p-4">
-          {project.hardGoodInventory.length > 0 ? (
-            <HardGoodTable rows={project.hardGoodInventory} role={role as "admin" | "freelancer"} filter={hardGoodFilter} />
+        <div className="p-3">
+          {hasHardGoods ? (
+            <HardGoodCardList rows={project.hardGoodInventory} role={role as "admin" | "freelancer"} filter={hardGoodFilter} />
           ) : role === "admin" ? (
-            <CsvUpload label="Hard Goods" onParsed={(rows) => {
-              console.log("Hard Goods CSV parsed:", rows);
-            }} />
+            <CsvUpload label="Hard Goods" onParsed={() => {}} />
           ) : (
             <p className="text-sm text-muted-foreground text-center py-4">No hard goods inventory uploaded yet</p>
           )}
@@ -387,7 +424,7 @@ const InventoryTab = ({ project, role }: { project: Project; role: string }) => 
       </div>
 
       {/* Summary */}
-      {(project.flowerInventory.length > 0 || project.hardGoodInventory.length > 0) && (
+      {(hasFlowers || hasHardGoods) && (
         <div className="bg-card rounded-lg border border-border p-4">
           <div className="grid grid-cols-3 gap-3 text-center">
             <div>
@@ -407,6 +444,30 @@ const InventoryTab = ({ project, role }: { project: Project; role: string }) => 
                 {flowerIssues + hardGoodIssues}
               </div>
               <div className="text-[10px] text-muted-foreground font-medium">Issues</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(null)}>
+          <div className="bg-card rounded-xl shadow-elevated w-[85vw] max-w-sm p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-sm font-semibold text-foreground">Delete {showDeleteConfirm === "flowers" ? "Flower" : "Hard Goods"} Inventory?</h3>
+            <p className="text-xs text-muted-foreground">This will remove all rows and cannot be undone.</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                className="flex-1 py-2.5 rounded-lg bg-muted text-muted-foreground text-sm font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                className="flex-1 py-2.5 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>

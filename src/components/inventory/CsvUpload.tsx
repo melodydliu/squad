@@ -1,12 +1,13 @@
 import { useRef } from "react";
-import { Upload } from "lucide-react";
+import { Upload, RefreshCw } from "lucide-react";
 
 interface CsvUploadProps {
   label: string;
   onParsed: (rows: string[][]) => void;
+  compact?: boolean;
 }
 
-const CsvUpload = ({ label, onParsed }: CsvUploadProps) => {
+const CsvUpload = ({ label, onParsed, compact }: CsvUploadProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -21,25 +22,33 @@ const CsvUpload = ({ label, onParsed }: CsvUploadProps) => {
         .map((line) => line.split(",").map((cell) => cell.trim()))
         .filter((row) => row.some((cell) => cell.length > 0));
 
-      // Skip header row
       if (lines.length > 1) {
         onParsed(lines.slice(1));
       }
     };
     reader.readAsText(file);
-    // Reset so user can re-upload
     e.target.value = "";
   };
 
+  if (compact) {
+    return (
+      <>
+        <input ref={inputRef} type="file" accept=".csv" className="hidden" onChange={handleFile} />
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors"
+          title={`Replace ${label} CSV`}
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+        </button>
+      </>
+    );
+  }
+
   return (
     <div>
-      <input
-        ref={inputRef}
-        type="file"
-        accept=".csv"
-        className="hidden"
-        onChange={handleFile}
-      />
+      <input ref={inputRef} type="file" accept=".csv" className="hidden" onChange={handleFile} />
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
