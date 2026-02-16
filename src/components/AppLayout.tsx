@@ -1,9 +1,10 @@
 import { ReactNode, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Flower2, LayoutDashboard, Plus, Bell, User, LogOut, ChevronLeft, Settings } from "lucide-react";
+import { Flower2, LayoutDashboard, Plus, Bell, User, LogOut, ChevronLeft, Settings, Phone } from "lucide-react";
 import { mockNotifications } from "@/data/mockData";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -11,6 +12,12 @@ interface AppLayoutProps {
   showBack?: boolean;
   role: "admin" | "freelancer";
 }
+
+const ADMIN_CONTACT = {
+  name: "Jane Bloom",
+  phone: "(555) 000-1234",
+  email: "jane@bloomstudio.com",
+};
 
 const AppLayout = ({ children, title, showBack, role }: AppLayoutProps) => {
   const navigate = useNavigate();
@@ -49,6 +56,23 @@ const AppLayout = ({ children, title, showBack, role }: AppLayoutProps) => {
             </h1>
           </div>
           <div className="flex items-center gap-1">
+            {role === "freelancer" && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="p-2 text-muted-foreground hover:text-foreground transition-colors">
+                    <Phone className="w-4 h-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-56 p-3 space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Admin Contact</p>
+                  <div className="space-y-1 text-sm">
+                    <p className="font-medium text-foreground">{ADMIN_CONTACT.name}</p>
+                    <a href={`tel:${ADMIN_CONTACT.phone}`} className="block text-muted-foreground hover:text-foreground transition-colors">{ADMIN_CONTACT.phone}</a>
+                    <a href={`mailto:${ADMIN_CONTACT.email}`} className="block text-muted-foreground hover:text-foreground transition-colors">{ADMIN_CONTACT.email}</a>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
             <button
               onClick={() => navigate(`/${role}/settings`)}
               className="p-2 text-muted-foreground hover:text-foreground transition-colors"
