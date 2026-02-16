@@ -1,8 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import ProjectCard from "@/components/ProjectCard";
+import { Button } from "@/components/ui/button";
 import { mockProjects, ProjectStatus, getAssignedSubCategory, getAttentionFlags } from "@/data/mockData";
 import { motion } from "framer-motion";
+import { Plus } from "lucide-react";
 
 type FilterValue = "all" | ProjectStatus;
 
@@ -15,6 +18,7 @@ const statusFilters: { label: string; value: FilterValue }[] = [
 
 const AdminDashboard = () => {
   const [filter, setFilter] = useState<FilterValue>("all");
+  const navigate = useNavigate();
 
   const filtered = filter === "all"
     ? mockProjects
@@ -56,6 +60,12 @@ const AdminDashboard = () => {
   return (
     <AppLayout role="admin" title="Dashboard">
       <div className="space-y-6">
+        {/* New Project Button */}
+        <Button onClick={() => navigate("/admin/create")} className="w-full rounded-xl gap-2">
+          <Plus className="w-4 h-4" />
+          New Project
+        </Button>
+
         {/* Filters */}
         <div className="flex gap-2 overflow-x-auto pt-2 pb-1 scrollbar-hide">
           {statusFilters.map((f) => {

@@ -19,7 +19,6 @@ const AppLayout = ({ children, title, showBack, role }: AppLayoutProps) => {
 
   const adminTabs = [
     { path: "/admin", icon: LayoutDashboard, label: "Dashboard" },
-    { path: "/admin/create", icon: Plus, label: "New Project" },
     { path: "/notifications", icon: Bell, label: "Alerts", badge: unreadCount },
     { path: "/profile", icon: User, label: "Profile" },
   ];
