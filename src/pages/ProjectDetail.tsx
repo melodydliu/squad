@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import StatusBadge from "@/components/StatusBadge";
-import { mockProjects, mockFreelancers, Project } from "@/data/mockData";
+import { mockProjects, mockFreelancers, Project, getAttentionFlags } from "@/data/mockData";
 import { Calendar, MapPin, DollarSign, Truck, Check, X, Camera, AlertCircle, CheckCircle2, Image, Clock, Car } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -12,7 +12,8 @@ const ProjectDetail = () => {
   const [searchParams] = useSearchParams();
   const role = (searchParams.get("role") as "admin" | "freelancer") || "admin";
   const project = mockProjects.find((p) => p.id === id);
-  const [activeTab, setActiveTab] = useState<"overview" | "inventory" | "designs">("overview");
+  const initialTab = (searchParams.get("tab") as "overview" | "inventory" | "designs") || "overview";
+  const [activeTab, setActiveTab] = useState<"overview" | "inventory" | "designs">(initialTab);
 
   if (!project) {
     return (
@@ -37,7 +38,7 @@ const ProjectDetail = () => {
       <div className="space-y-4">
         {/* Status + Pay header */}
         <div className="flex items-center justify-between">
-          <StatusBadge status={project.status} />
+          <StatusBadge status={project.status} project={project} />
           <div className="text-right">
             <span className="text-lg font-bold font-display text-foreground">${project.pay}</span>
             <span className="text-xs text-muted-foreground ml-1.5">· {project.totalHours}h</span>
@@ -177,7 +178,7 @@ const OverviewTab = ({ project, role, assignedFreelancer }: { project: Project; 
     )}
 
     {/* Freelancer action buttons */}
-    {role === "freelancer" && project.status === "open" && (
+    {role === "freelancer" && project.status === "unassigned" && (
       <div className="flex gap-3">
         <button className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium">
           I'm Interested
