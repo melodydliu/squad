@@ -301,10 +301,12 @@ const InventoryTab = ({ project, role }: { project: Project; role: string }) => 
   const [hardGoodFilter, setHardGoodFilter] = useState<InventoryFilter>("all");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<"flowers" | "hardgoods" | null>(null);
 
-  const flowerFlagged = project.flowerInventory.filter((r) => r.status === "flagged").length;
-  const hardGoodFlagged = project.hardGoodInventory.filter((r) => r.status === "flagged").length;
   const hasFlowers = project.flowerInventory.length > 0;
   const hasHardGoods = project.hardGoodInventory.length > 0;
+  const flowerFlagged = project.flowerInventory.filter((r) => r.status === "flagged").length;
+  const hardGoodFlagged = project.hardGoodInventory.filter((r) => r.status === "flagged").length;
+  const flowerAllApproved = hasFlowers && flowerFlagged === 0 && project.flowerInventory.every((r) => r.status === "approved");
+  const hardGoodAllApproved = hasHardGoods && hardGoodFlagged === 0 && project.hardGoodInventory.every((r) => r.status === "approved");
 
   return (
     <div className="space-y-4">
@@ -315,11 +317,15 @@ const InventoryTab = ({ project, role }: { project: Project; role: string }) => 
             <div className="flex items-center gap-2">
               <Flower2 className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-semibold text-foreground">Flowers</h3>
-              {flowerFlagged > 0 && (
-                <span className="text-[10px] font-semibold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">
+              {flowerAllApproved ? (
+                <span className="text-[10px] font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full">
+                  All Approved
+                </span>
+              ) : flowerFlagged > 0 ? (
+                <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full">
                   {flowerFlagged} flagged
                 </span>
-              )}
+              ) : null}
             </div>
             {/* Admin CSV controls */}
             {role === "admin" && hasFlowers && (
@@ -373,11 +379,15 @@ const InventoryTab = ({ project, role }: { project: Project; role: string }) => 
             <div className="flex items-center gap-2">
               <Package className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-semibold text-foreground">Hard Goods</h3>
-              {hardGoodFlagged > 0 && (
-                <span className="text-[10px] font-semibold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">
+              {hardGoodAllApproved ? (
+                <span className="text-[10px] font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full">
+                  All Approved
+                </span>
+              ) : hardGoodFlagged > 0 ? (
+                <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full">
                   {hardGoodFlagged} flagged
                 </span>
-              )}
+              ) : null}
             </div>
             {role === "admin" && hasHardGoods && (
               <div className="flex items-center gap-1">
@@ -439,7 +449,7 @@ const InventoryTab = ({ project, role }: { project: Project; role: string }) => 
               <div className="text-[10px] text-muted-foreground font-medium">Approved</div>
             </div>
             <div>
-              <div className="text-lg font-bold text-destructive font-display">
+              <div className="text-lg font-bold text-warning font-display">
                 {flowerFlagged + hardGoodFlagged}
               </div>
               <div className="text-[10px] text-muted-foreground font-medium">Flagged</div>
