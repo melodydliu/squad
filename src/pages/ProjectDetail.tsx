@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import StatusBadge from "@/components/StatusBadge";
@@ -16,7 +16,24 @@ const ProjectDetail = () => {
   const role = searchParams.get("role") as "admin" | "freelancer" || "admin";
   const project = mockProjects.find((p) => p.id === id);
   const initialTab = searchParams.get("tab") as "overview" | "inventory" | "designs" || "overview";
+  const highlightId = searchParams.get("highlight") || undefined;
   const [activeTab, setActiveTab] = useState<"overview" | "inventory" | "designs">(initialTab);
+
+  // Scroll to highlighted element after render
+  useEffect(() => {
+    if (!highlightId) return;
+    const timeout = setTimeout(() => {
+      const el = document.querySelector(`[data-item-id="${highlightId}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.classList.add("ring-2", "ring-primary", "ring-offset-2", "ring-offset-background");
+        setTimeout(() => {
+          el.classList.remove("ring-2", "ring-primary", "ring-offset-2", "ring-offset-background");
+        }, 2500);
+      }
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [highlightId, activeTab]);
 
   if (!project) {
     return (
@@ -526,7 +543,7 @@ const FloralItemDesignCard = ({
   const hasPhotos = design && design.photos.length > 0;
 
   return (
-    <div className="bg-card rounded-lg border border-border overflow-hidden">
+    <div data-item-id={design?.id} className="bg-card rounded-lg border border-border overflow-hidden transition-all duration-500">
       {/* Item Header */}
       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
