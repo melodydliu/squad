@@ -1,26 +1,30 @@
 import { Flower2, MapPin, Calendar, DollarSign, Clock, User, Camera, Package, CheckCircle2, AlertCircle, Eye } from "lucide-react";
 
 export type ProjectStatus = "unassigned" | "assigned" | "completed";
-export type DeliveryMethod = "ship" | "pickup";
 export type TransportMethod = "personal_vehicle" | "uhaul_rental";
 export type QualityStatus = "good" | "issue";
+export type ServiceLevel = "design" | "delivery" | "setup" | "flip" | "strike";
 
 // Derived sub-category for assigned projects
 export type AssignedSubCategory = "upcoming" | "in_progress";
+
+/** Controls which fields freelancers can see */
+export type FieldVisibility = Record<string, boolean>;
 
 export interface Project {
   id: string;
   eventName: string;
   dateStart: string;
   dateEnd: string;
-  time: string;
+  timeline: string;
   location: string;
   pay: number;
   totalHours: number;
   description: string;
   moodDescription: string;
-  deliveryMethod: DeliveryMethod;
   transportMethod: TransportMethod;
+  serviceLevel: ServiceLevel[];
+  dayOfContact: string;
   status: ProjectStatus;
   inspirationPhotos: string[];
   recipes: string[];
@@ -34,6 +38,7 @@ export interface Project {
   designs: DesignUpload[];
   floralItems: FloralItem[];
   floralItemDesigns: FloralItemDesign[];
+  fieldVisibility: FieldVisibility;
   createdAt: string;
 }
 
@@ -185,20 +190,43 @@ export const mockFreelancers: Freelancer[] = [
   },
 ];
 
+export const DEFAULT_VISIBILITY: FieldVisibility = {
+  timeline: true,
+  location: true,
+  pay: true,
+  totalHours: true,
+  description: true,
+  moodDescription: true,
+  transportMethod: true,
+  serviceLevel: true,
+  dayOfContact: true,
+  floralItems: true,
+  inspirationPhotos: true,
+};
+
+export const SERVICE_LEVEL_OPTIONS: { value: ServiceLevel; label: string }[] = [
+  { value: "design", label: "Design" },
+  { value: "delivery", label: "Delivery" },
+  { value: "setup", label: "Setup" },
+  { value: "flip", label: "Flip" },
+  { value: "strike", label: "Strike" },
+];
+
 export const mockProjects: Project[] = [
   {
     id: "p1",
     eventName: "Anderson-Park Wedding",
     dateStart: "2026-03-15",
     dateEnd: "2026-03-16",
-    time: "2:00 PM",
+    timeline: "Arrive 10 AM for setup. Ceremony at 2 PM, reception follows. Flip between ceremony and reception at 4 PM.",
     location: "The Garden Estate, Savannah, GA",
     pay: 850,
     totalHours: 12,
     description: "Intimate garden wedding for 80 guests. Ceremony arch, 8 centerpieces, bridal bouquet, 4 bridesmaid bouquets, boutonnieres.",
     moodDescription: "Romantic, organic, garden-style with soft pastels and lots of greenery. Think English garden meets Southern charm.",
-    deliveryMethod: "ship",
     transportMethod: "personal_vehicle",
+    serviceLevel: ["design", "delivery", "setup", "flip"],
+    dayOfContact: "Sarah Anderson — (555) 999-1234",
     status: "unassigned",
     inspirationPhotos: [
       "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=400",
@@ -218,6 +246,7 @@ export const mockProjects: Project[] = [
       { id: "fi5", name: "Boutonniere", quantity: 6 },
     ],
     floralItemDesigns: [],
+    fieldVisibility: { ...DEFAULT_VISIBILITY },
     createdAt: "2026-02-14",
   },
   {
@@ -225,14 +254,15 @@ export const mockProjects: Project[] = [
     eventName: "Luxe Corporate Gala",
     dateStart: "2026-02-10",
     dateEnd: "2026-02-10",
-    time: "6:00 PM",
+    timeline: "Load-in starts at 2 PM. Event begins 6 PM. Strike after 10 PM.",
     location: "The Grand Ballroom, Atlanta, GA",
     pay: 1200,
     totalHours: 8,
     description: "Upscale corporate event. 12 tall centerpieces, stage arrangements, entrance installations.",
     moodDescription: "Dramatic, luxe, modern. Deep burgundy, white, and gold accents.",
-    deliveryMethod: "pickup",
     transportMethod: "uhaul_rental",
+    serviceLevel: ["design", "delivery", "setup", "strike"],
+    dayOfContact: "Event coordinator — (555) 800-2000",
     status: "assigned",
     inspirationPhotos: [
       "https://images.unsplash.com/photo-1478146059778-26028b07395a?w=400",
@@ -257,6 +287,7 @@ export const mockProjects: Project[] = [
       { id: "fid1", floralItemId: "fi6", photos: [{ id: "dp1", photoUrl: "https://images.unsplash.com/photo-1487530811176-3780de880c2d?w=400" }], freelancerNote: "Centerpiece sample", approved: true, revisionRequested: false },
       { id: "fid2", floralItemId: "fi7", photos: [{ id: "dp2", photoUrl: "https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=400" }], freelancerNote: "Stage left arrangement", approved: false, revisionRequested: false },
     ],
+    fieldVisibility: { ...DEFAULT_VISIBILITY },
     createdAt: "2026-02-10",
   },
   {
@@ -264,14 +295,15 @@ export const mockProjects: Project[] = [
     eventName: "Spring Baby Shower",
     dateStart: "2026-04-05",
     dateEnd: "2026-04-05",
-    time: "11:00 AM",
+    timeline: "Deliver arrangements by 9 AM. Event starts 11 AM.",
     location: "Private Residence, Charleston, SC",
     pay: 450,
     totalHours: 5,
     description: "Sweet baby shower brunch. Small centerpieces, welcome arrangement, gift table decor.",
     moodDescription: "Soft, whimsical, spring garden. Lavender, soft yellow, white.",
-    deliveryMethod: "ship",
     transportMethod: "personal_vehicle",
+    serviceLevel: ["design", "delivery", "setup"],
+    dayOfContact: "Mom-to-be's sister — (555) 222-3333",
     status: "assigned",
     inspirationPhotos: [
       "https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=400",
@@ -294,6 +326,7 @@ export const mockProjects: Project[] = [
     floralItemDesigns: [
       { id: "fid3", floralItemId: "fi10", photos: [{ id: "dp3", photoUrl: "https://images.unsplash.com/photo-1455659817273-f96807779a8a?w=400" }], freelancerNote: "Welcome arrangement", approved: false, revisionRequested: true, adminNote: "Beautiful! Can we add a few more stems of lavender?" },
     ],
+    fieldVisibility: { ...DEFAULT_VISIBILITY },
     createdAt: "2026-02-08",
   },
   {
@@ -301,14 +334,15 @@ export const mockProjects: Project[] = [
     eventName: "Thompson Anniversary Dinner",
     dateStart: "2026-04-12",
     dateEnd: "2026-04-12",
-    time: "7:00 PM",
+    timeline: "Setup at 5 PM. Dinner at 7 PM.",
     location: "Magnolia House, Beaufort, SC",
     pay: 600,
     totalHours: 6,
     description: "Elegant 25th anniversary dinner for 30 guests. 4 centerpieces, sweetheart table arrangement.",
     moodDescription: "Classic elegance. White and blush roses, peonies, candles.",
-    deliveryMethod: "pickup",
     transportMethod: "personal_vehicle",
+    serviceLevel: ["design", "delivery", "setup"],
+    dayOfContact: "Mr. Thompson — (555) 444-5555",
     status: "completed",
     inspirationPhotos: [],
     recipes: [],
@@ -328,6 +362,7 @@ export const mockProjects: Project[] = [
     floralItemDesigns: [
       { id: "fid4", floralItemId: "fi12", photos: [{ id: "dp4", photoUrl: "https://images.unsplash.com/photo-1526047932273-341f2a7631f9?w=400" }], approved: true, revisionRequested: false },
     ],
+    fieldVisibility: { ...DEFAULT_VISIBILITY },
     createdAt: "2026-01-20",
   },
 ];
