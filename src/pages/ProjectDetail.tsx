@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import StatusBadge from "@/components/StatusBadge";
-import { mockProjects, mockFreelancers, Project, getAttentionFlags } from "@/data/mockData";
-import { Calendar, MapPin, DollarSign, Truck, Check, X, Camera, AlertCircle, CheckCircle2, Image, Clock, Car } from "lucide-react";
+import { mockProjects, mockFreelancers, Project, FloralItem, FloralItemDesign, getAttentionFlags } from "@/data/mockData";
+import { Calendar, MapPin, DollarSign, Truck, Check, X, Camera, AlertCircle, CheckCircle2, Image, Clock, Car, Flower2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -113,6 +113,23 @@ const OverviewTab = ({ project, role, assignedFreelancer }: { project: Project; 
         <span>{project.totalHours} hours</span>
       </div>
     </div>
+
+    {/* Floral Items */}
+    {project.floralItems.length > 0 && (
+      <div className="bg-card rounded-lg border border-border p-4 space-y-3">
+        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <Flower2 className="w-4 h-4 text-primary" /> Floral Items
+        </h3>
+        <div className="space-y-2">
+          {project.floralItems.map((item) => (
+            <div key={item.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
+              <span className="text-sm text-foreground">{item.name}</span>
+              <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">×{item.quantity}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
 
     {/* Description */}
     <div className="bg-card rounded-lg border border-border p-4 space-y-2">
@@ -258,64 +275,125 @@ const InventoryTab = ({ project, role }: { project: Project; role: string }) => 
   </div>
 );
 
-const DesignsTab = ({ project, role }: { project: Project; role: string }) => (
-  <div className="space-y-4">
-    {project.designs.length > 0 ? (
-      project.designs.map((design) => (
-        <div key={design.id} className="bg-card rounded-lg border border-border overflow-hidden">
-          <img src={design.photoUrl} alt="Design" className="w-full aspect-[4/3] object-cover" />
-          <div className="p-3 space-y-2">
-            {design.note && (
-              <p className="text-sm text-muted-foreground">{design.note}</p>
-            )}
-            <div className="flex items-center justify-between">
-              {design.approved ? (
-                <span className="flex items-center gap-1 text-xs text-success font-medium">
-                  <CheckCircle2 className="w-4 h-4" /> Approved
-                </span>
-              ) : design.revisionRequested ? (
-                <div className="space-y-1">
-                  <span className="flex items-center gap-1 text-xs text-warning font-medium">
-                    <AlertCircle className="w-4 h-4" /> Revision Requested
-                  </span>
-                  {design.revisionNote && (
-                    <p className="text-xs text-muted-foreground pl-5">{design.revisionNote}</p>
-                  )}
-                </div>
-              ) : role === "admin" ? (
-                <div className="flex gap-2">
-                  <button className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-foreground">Approve</button>
-                  <button className="px-3 py-1.5 text-xs font-medium rounded-lg bg-muted text-muted-foreground">Request Revision</button>
-                </div>
-              ) : (
-                <span className="text-xs text-muted-foreground">Awaiting review</span>
-              )}
-            </div>
-          </div>
-        </div>
-      ))
-    ) : (
+const DesignsTab = ({ project, role }: { project: Project; role: string }) => {
+  const items = project.floralItems;
+  const designs = project.floralItemDesigns;
+
+  if (items.length === 0) {
+    return (
       <div className="text-center py-8 space-y-3">
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted">
-          <Image className="w-5 h-5 text-muted-foreground" />
+          <Flower2 className="w-5 h-5 text-muted-foreground" />
         </div>
-        <p className="text-sm text-muted-foreground">No designs uploaded yet</p>
-        {role === "freelancer" && (
-          <button className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-primary-foreground">
-            <Camera className="w-4 h-4 inline mr-1.5" />
-            Upload Design Photo
-          </button>
+        <p className="text-sm text-muted-foreground">No floral items defined for this project</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {items.map((item) => {
+        const design = designs.find((d) => d.floralItemId === item.id);
+        return (
+          <FloralItemDesignCard key={item.id} item={item} design={design} role={role} />
+        );
+      })}
+    </div>
+  );
+};
+
+const FloralItemDesignCard = ({
+  item,
+  design,
+  role,
+}: {
+  item: FloralItem;
+  design?: FloralItemDesign;
+  role: string;
+}) => {
+  const hasPhotos = design && design.photos.length > 0;
+
+  return (
+    <div className="bg-card rounded-lg border border-border overflow-hidden">
+      {/* Item Header */}
+      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Flower2 className="w-4 h-4 text-primary" />
+          <span className="text-sm font-semibold text-foreground">{item.name}</span>
+          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">×{item.quantity}</span>
+        </div>
+        {design?.approved && (
+          <span className="flex items-center gap-1 text-xs text-success font-medium">
+            <CheckCircle2 className="w-3.5 h-3.5" /> Approved
+          </span>
+        )}
+        {design?.revisionRequested && (
+          <span className="flex items-center gap-1 text-xs text-warning font-medium">
+            <AlertCircle className="w-3.5 h-3.5" /> Revision
+          </span>
         )}
       </div>
-    )}
 
-    {role === "freelancer" && project.designs.length > 0 && (
-      <button className="w-full py-3 rounded-lg border-2 border-dashed border-border text-sm font-medium text-muted-foreground hover:border-primary hover:text-primary transition-colors">
-        <Camera className="w-4 h-4 inline mr-1.5" />
-        Upload Another Design
-      </button>
-    )}
-  </div>
-);
+      {/* Photos Grid */}
+      {hasPhotos ? (
+        <div className="p-3 space-y-3">
+          <div className={`grid gap-2 ${design.photos.length === 1 ? "grid-cols-1" : design.photos.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
+            {design.photos.map((photo) => (
+              <div key={photo.id} className="rounded-lg overflow-hidden aspect-square">
+                <img src={photo.photoUrl} alt={item.name} className="w-full h-full object-cover" />
+              </div>
+            ))}
+          </div>
+
+          {/* Freelancer Note */}
+          {design.freelancerNote && (
+            <p className="text-sm text-muted-foreground italic">"{design.freelancerNote}"</p>
+          )}
+
+          {/* Admin Note / Revision Note */}
+          {design.revisionRequested && design.adminNote && (
+            <div className="bg-warning/5 border border-warning/20 rounded-lg p-3">
+              <p className="text-xs font-medium text-warning mb-1">Admin Revision Note</p>
+              <p className="text-sm text-foreground">{design.adminNote}</p>
+            </div>
+          )}
+
+          {/* Admin Actions */}
+          {role === "admin" && !design.approved && !design.revisionRequested && (
+            <div className="flex gap-2 pt-1">
+              <button className="flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-primary text-primary-foreground">
+                Approve
+              </button>
+              <button className="flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-muted text-muted-foreground">
+                Request Revision
+              </button>
+            </div>
+          )}
+
+          {/* Freelancer: upload more (max 3) */}
+          {role === "freelancer" && design.photos.length < 3 && (
+            <button className="w-full py-2 rounded-lg border border-dashed border-border text-xs font-medium text-muted-foreground hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-1.5">
+              <Camera className="w-3.5 h-3.5" />
+              Add Photo ({3 - design.photos.length} remaining)
+            </button>
+          )}
+        </div>
+      ) : (
+        /* No photos uploaded yet */
+        <div className="p-4">
+          {role === "freelancer" ? (
+            <button className="w-full py-6 rounded-lg border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors flex flex-col items-center gap-2">
+              <Camera className="w-5 h-5" />
+              <span className="text-xs font-medium">Upload Design Photos</span>
+              <span className="text-[10px] text-muted-foreground">Up to 3 photos</span>
+            </button>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-2">No designs uploaded yet</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default ProjectDetail;
