@@ -1,8 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { Camera, Plus, Clock } from "lucide-react";
-import { motion } from "framer-motion";
+import { Camera, Plus, Trash2 } from "lucide-react";
+
+interface FloralItemRow {
+  id: string;
+  name: string;
+  quantity: string;
+}
+
+let nextId = 1;
+const makeId = () => `new-${nextId++}`;
 
 const CreateProject = () => {
   const navigate = useNavigate();
@@ -19,12 +27,24 @@ const CreateProject = () => {
     deliveryMethod: "ship" as "ship" | "pickup",
     transportMethod: "personal_vehicle" as "personal_vehicle" | "uhaul_rental",
   });
+  const [floralItems, setFloralItems] = useState<FloralItemRow[]>([]);
 
   const update = (key: string, value: string) => setForm((p) => ({ ...p, [key]: value }));
 
+  const addFloralItem = () => {
+    setFloralItems((prev) => [...prev, { id: makeId(), name: "", quantity: "1" }]);
+  };
+
+  const updateFloralItem = (id: string, field: "name" | "quantity", value: string) => {
+    setFloralItems((prev) => prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
+  };
+
+  const removeFloralItem = (id: string) => {
+    setFloralItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock — would save to DB
     navigate("/admin");
   };
 
@@ -66,6 +86,49 @@ const CreateProject = () => {
             rows={2}
             className="w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm resize-none"
           />
+        </div>
+
+        {/* Floral Items */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">Floral Items</label>
+          {floralItems.length > 0 && (
+            <div className="space-y-2">
+              {floralItems.map((item) => (
+                <div key={item.id} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={item.name}
+                    onChange={(e) => updateFloralItem(item.id, "name", e.target.value)}
+                    placeholder="Item name"
+                    className="flex-1 px-3 py-2.5 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+                  />
+                  <input
+                    type="number"
+                    min="1"
+                    value={item.quantity}
+                    onChange={(e) => updateFloralItem(item.id, "quantity", e.target.value)}
+                    className="w-16 px-3 py-2.5 rounded-lg border border-input bg-card text-foreground text-sm text-center focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="Qty"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeFloralItem(item.id)}
+                    className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={addFloralItem}
+            className="w-full py-3 rounded-lg border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            Add Floral Item
+          </button>
         </div>
 
         {/* Delivery Method */}

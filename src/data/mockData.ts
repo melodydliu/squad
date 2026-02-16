@@ -32,9 +32,33 @@ export interface Project {
   qualityStatus?: QualityStatus;
   qualityNote?: string;
   designs: DesignUpload[];
+  floralItems: FloralItem[];
+  floralItemDesigns: FloralItemDesign[];
   createdAt: string;
 }
 
+export interface FloralItem {
+  id: string;
+  name: string;
+  quantity: number;
+}
+
+export interface FloralItemDesign {
+  id: string;
+  floralItemId: string;
+  photos: DesignPhoto[];
+  freelancerNote?: string;
+  approved: boolean;
+  revisionRequested: boolean;
+  adminNote?: string;
+}
+
+export interface DesignPhoto {
+  id: string;
+  photoUrl: string;
+}
+
+/** @deprecated kept for backward compat — use FloralItemDesign instead */
 export interface DesignUpload {
   id: string;
   photoUrl: string;
@@ -108,10 +132,17 @@ export function getAttentionFlags(project: Project): AttentionFlag {
     reviewTab = reviewTab || "inventory";
   }
 
-  // Designs uploaded awaiting approval
+  // Legacy designs awaiting approval
   const pendingDesigns = project.designs.filter((d) => !d.approved && !d.revisionRequested);
   if (pendingDesigns.length > 0) {
     reasons.push(`${pendingDesigns.length} design${pendingDesigns.length > 1 ? "s" : ""} awaiting approval`);
+    reviewTab = reviewTab || "designs";
+  }
+
+  // Floral item designs awaiting approval
+  const pendingFloralDesigns = project.floralItemDesigns.filter((d) => d.photos.length > 0 && !d.approved && !d.revisionRequested);
+  if (pendingFloralDesigns.length > 0) {
+    reasons.push(`${pendingFloralDesigns.length} floral design${pendingFloralDesigns.length > 1 ? "s" : ""} awaiting approval`);
     reviewTab = reviewTab || "designs";
   }
 
@@ -179,6 +210,14 @@ export const mockProjects: Project[] = [
     flowersConfirmed: false,
     hardGoodsConfirmed: false,
     designs: [],
+    floralItems: [
+      { id: "fi1", name: "Bridal Bouquet", quantity: 1 },
+      { id: "fi2", name: "Bridesmaid Bouquet", quantity: 4 },
+      { id: "fi3", name: "Ceremony Arch", quantity: 1 },
+      { id: "fi4", name: "Centerpiece", quantity: 8 },
+      { id: "fi5", name: "Boutonniere", quantity: 6 },
+    ],
+    floralItemDesigns: [],
     createdAt: "2026-02-14",
   },
   {
@@ -209,6 +248,15 @@ export const mockProjects: Project[] = [
       { id: "d1", photoUrl: "https://images.unsplash.com/photo-1487530811176-3780de880c2d?w=400", note: "Centerpiece #1 - tall arrangement", approved: true, revisionRequested: false },
       { id: "d2", photoUrl: "https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=400", note: "Stage left arrangement", approved: false, revisionRequested: false },
     ],
+    floralItems: [
+      { id: "fi6", name: "Tall Centerpiece", quantity: 12 },
+      { id: "fi7", name: "Stage Arrangement", quantity: 3 },
+      { id: "fi8", name: "Entrance Installation", quantity: 2 },
+    ],
+    floralItemDesigns: [
+      { id: "fid1", floralItemId: "fi6", photos: [{ id: "dp1", photoUrl: "https://images.unsplash.com/photo-1487530811176-3780de880c2d?w=400" }], freelancerNote: "Centerpiece sample", approved: true, revisionRequested: false },
+      { id: "fid2", floralItemId: "fi7", photos: [{ id: "dp2", photoUrl: "https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=400" }], freelancerNote: "Stage left arrangement", approved: false, revisionRequested: false },
+    ],
     createdAt: "2026-02-10",
   },
   {
@@ -238,6 +286,14 @@ export const mockProjects: Project[] = [
     designs: [
       { id: "d3", photoUrl: "https://images.unsplash.com/photo-1455659817273-f96807779a8a?w=400", note: "Welcome arrangement", approved: false, revisionRequested: true, revisionNote: "Beautiful! Can we add a few more stems of lavender?" },
     ],
+    floralItems: [
+      { id: "fi9", name: "Small Centerpiece", quantity: 4 },
+      { id: "fi10", name: "Welcome Arrangement", quantity: 1 },
+      { id: "fi11", name: "Gift Table Decor", quantity: 1 },
+    ],
+    floralItemDesigns: [
+      { id: "fid3", floralItemId: "fi10", photos: [{ id: "dp3", photoUrl: "https://images.unsplash.com/photo-1455659817273-f96807779a8a?w=400" }], freelancerNote: "Welcome arrangement", approved: false, revisionRequested: true, adminNote: "Beautiful! Can we add a few more stems of lavender?" },
+    ],
     createdAt: "2026-02-08",
   },
   {
@@ -264,6 +320,13 @@ export const mockProjects: Project[] = [
     qualityStatus: "good",
     designs: [
       { id: "d4", photoUrl: "https://images.unsplash.com/photo-1526047932273-341f2a7631f9?w=400", approved: true, revisionRequested: false },
+    ],
+    floralItems: [
+      { id: "fi12", name: "Centerpiece", quantity: 4 },
+      { id: "fi13", name: "Sweetheart Table Arrangement", quantity: 1 },
+    ],
+    floralItemDesigns: [
+      { id: "fid4", floralItemId: "fi12", photos: [{ id: "dp4", photoUrl: "https://images.unsplash.com/photo-1526047932273-341f2a7631f9?w=400" }], approved: true, revisionRequested: false },
     ],
     createdAt: "2026-01-20",
   },
