@@ -22,7 +22,7 @@ const FreelancerDashboard = () => {
         {/* Tab Switch */}
         <div className="flex bg-muted rounded-lg p-1">
           {[
-            { label: "Available", value: "available" as const },
+            { label: "Available Projects", value: "available" as const },
             { label: "My Projects", value: "my" as const },
           ].map((t) => (
             <button
