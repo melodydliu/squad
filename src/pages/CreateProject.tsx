@@ -1,20 +1,23 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { Camera, Plus } from "lucide-react";
+import { Camera, Plus, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 
 const CreateProject = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     eventName: "",
-    date: "",
+    dateStart: "",
+    dateEnd: "",
     time: "",
     location: "",
     pay: "",
+    totalHours: "",
     description: "",
     moodDescription: "",
     deliveryMethod: "ship" as "ship" | "pickup",
+    transportMethod: "personal_vehicle" as "personal_vehicle" | "uhaul_rental",
   });
 
   const update = (key: string, value: string) => setForm((p) => ({ ...p, [key]: value }));
@@ -31,12 +34,17 @@ const CreateProject = () => {
         <InputField label="Event Name" value={form.eventName} onChange={(v) => update("eventName", v)} placeholder="e.g. Smith-Jones Wedding" />
 
         <div className="grid grid-cols-2 gap-3">
-          <InputField label="Date" type="date" value={form.date} onChange={(v) => update("date", v)} />
-          <InputField label="Time" type="time" value={form.time} onChange={(v) => update("time", v)} />
+          <InputField label="Start Date" type="date" value={form.dateStart} onChange={(v) => update("dateStart", v)} />
+          <InputField label="End Date" type="date" value={form.dateEnd} onChange={(v) => update("dateEnd", v)} />
         </div>
 
+        <InputField label="Time" type="time" value={form.time} onChange={(v) => update("time", v)} />
+
         <InputField label="Location" value={form.location} onChange={(v) => update("location", v)} placeholder="Venue name & city" />
-        <InputField label="Project Pay" type="number" value={form.pay} onChange={(v) => update("pay", v)} placeholder="$" />
+        <div className="grid grid-cols-2 gap-3">
+          <InputField label="Project Pay" type="number" value={form.pay} onChange={(v) => update("pay", v)} placeholder="$" />
+          <InputField label="Total Hours" type="number" value={form.totalHours} onChange={(v) => update("totalHours", v)} placeholder="hrs" />
+        </div>
 
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-foreground">Description</label>
@@ -74,6 +82,30 @@ const CreateProject = () => {
                 onClick={() => update("deliveryMethod", opt.value)}
                 className={`py-3 px-3 rounded-lg text-xs font-medium border transition-colors ${
                   form.deliveryMethod === opt.value
+                    ? "border-primary bg-primary/5 text-primary"
+                    : "border-input bg-card text-muted-foreground"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Transport Method */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">Freelancer Transport</label>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { value: "personal_vehicle" as const, label: "Personal Vehicle" },
+              { value: "uhaul_rental" as const, label: "U-Haul Rental" },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => update("transportMethod", opt.value)}
+                className={`py-3 px-3 rounded-lg text-xs font-medium border transition-colors ${
+                  form.transportMethod === opt.value
                     ? "border-primary bg-primary/5 text-primary"
                     : "border-input bg-card text-muted-foreground"
                 }`}

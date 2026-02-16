@@ -2,18 +2,22 @@ import { Flower2, MapPin, Calendar, DollarSign, Clock, User, Camera, Package, Ch
 
 export type ProjectStatus = "open" | "awaiting_freelancer" | "in_progress" | "awaiting_approval" | "completed";
 export type DeliveryMethod = "ship" | "pickup";
+export type TransportMethod = "personal_vehicle" | "uhaul_rental";
 export type QualityStatus = "good" | "issue";
 
 export interface Project {
   id: string;
   eventName: string;
-  date: string;
+  dateStart: string;
+  dateEnd: string;
   time: string;
   location: string;
   pay: number;
+  totalHours: number;
   description: string;
   moodDescription: string;
   deliveryMethod: DeliveryMethod;
+  transportMethod: TransportMethod;
   status: ProjectStatus;
   inspirationPhotos: string[];
   recipes: string[];
@@ -100,13 +104,16 @@ export const mockProjects: Project[] = [
   {
     id: "p1",
     eventName: "Anderson-Park Wedding",
-    date: "2026-03-15",
+    dateStart: "2026-03-15",
+    dateEnd: "2026-03-16",
     time: "2:00 PM",
     location: "The Garden Estate, Savannah, GA",
     pay: 850,
+    totalHours: 12,
     description: "Intimate garden wedding for 80 guests. Ceremony arch, 8 centerpieces, bridal bouquet, 4 bridesmaid bouquets, boutonnieres.",
     moodDescription: "Romantic, organic, garden-style with soft pastels and lots of greenery. Think English garden meets Southern charm.",
     deliveryMethod: "ship",
+    transportMethod: "personal_vehicle",
     status: "open",
     inspirationPhotos: [
       "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=400",
@@ -123,13 +130,16 @@ export const mockProjects: Project[] = [
   {
     id: "p2",
     eventName: "Luxe Corporate Gala",
-    date: "2026-03-22",
+    dateStart: "2026-03-22",
+    dateEnd: "2026-03-22",
     time: "6:00 PM",
     location: "The Grand Ballroom, Atlanta, GA",
     pay: 1200,
+    totalHours: 8,
     description: "Upscale corporate event. 12 tall centerpieces, stage arrangements, entrance installations.",
     moodDescription: "Dramatic, luxe, modern. Deep burgundy, white, and gold accents.",
     deliveryMethod: "pickup",
+    transportMethod: "uhaul_rental",
     status: "in_progress",
     inspirationPhotos: [
       "https://images.unsplash.com/photo-1478146059778-26028b07395a?w=400",
@@ -150,13 +160,16 @@ export const mockProjects: Project[] = [
   {
     id: "p3",
     eventName: "Spring Baby Shower",
-    date: "2026-04-05",
+    dateStart: "2026-04-05",
+    dateEnd: "2026-04-05",
     time: "11:00 AM",
     location: "Private Residence, Charleston, SC",
     pay: 450,
+    totalHours: 5,
     description: "Sweet baby shower brunch. Small centerpieces, welcome arrangement, gift table decor.",
     moodDescription: "Soft, whimsical, spring garden. Lavender, soft yellow, white.",
     deliveryMethod: "ship",
+    transportMethod: "personal_vehicle",
     status: "awaiting_approval",
     inspirationPhotos: [
       "https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=400",
@@ -176,13 +189,16 @@ export const mockProjects: Project[] = [
   {
     id: "p4",
     eventName: "Thompson Anniversary Dinner",
-    date: "2026-04-12",
+    dateStart: "2026-04-12",
+    dateEnd: "2026-04-12",
     time: "7:00 PM",
     location: "Magnolia House, Beaufort, SC",
     pay: 600,
+    totalHours: 6,
     description: "Elegant 25th anniversary dinner for 30 guests. 4 centerpieces, sweetheart table arrangement.",
     moodDescription: "Classic elegance. White and blush roses, peonies, candles.",
     deliveryMethod: "pickup",
+    transportMethod: "personal_vehicle",
     status: "completed",
     inspirationPhotos: [],
     recipes: [],
