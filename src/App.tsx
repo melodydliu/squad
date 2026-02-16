@@ -10,6 +10,7 @@ import CreateProject from "./pages/CreateProject";
 import ProjectDetail from "./pages/ProjectDetail";
 import NotificationsPage from "./pages/NotificationsPage";
 import ProfilePage from "./pages/ProfilePage";
+import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,8 @@ const App = () => (
           <Route path="/project/:id" element={<ProjectDetail />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/admin/settings" element={<SettingsPage role="admin" />} />
+          <Route path="/freelancer/settings" element={<SettingsPage role="freelancer" />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
