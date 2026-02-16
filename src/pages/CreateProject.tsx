@@ -29,6 +29,7 @@ const CreateProject = () => {
     transportMethod: "personal_vehicle" as "personal_vehicle" | "uhaul_rental",
     serviceLevel: [] as ServiceLevel[],
     dayOfContact: "",
+    designersNeeded: "1",
   });
   const [floralItems, setFloralItems] = useState<FloralItemRow[]>([]);
   const [visibility, setVisibility] = useState<FieldVisibility>({ ...DEFAULT_VISIBILITY });
@@ -69,6 +70,8 @@ const CreateProject = () => {
     <AppLayout role="admin" title="New Project" showBack>
       <form onSubmit={handleSubmit} className="space-y-4">
         <InputField label="Event Name" value={form.eventName} onChange={(v) => update("eventName", v)} placeholder="e.g. Smith-Jones Wedding" />
+
+        <InputField label="Number of Designers Needed" type="number" value={form.designersNeeded} onChange={(v) => update("designersNeeded", String(Math.max(1, Number(v) || 1)))} placeholder="1" />
 
         <div className="grid grid-cols-2 gap-3">
           <InputField label="Start Date" type="date" value={form.dateStart} onChange={(v) => update("dateStart", v)} />

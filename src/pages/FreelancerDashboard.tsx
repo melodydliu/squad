@@ -11,7 +11,7 @@ const FreelancerDashboard = () => {
 
   const availableProjects = mockProjects.filter((p) => p.status === "unassigned");
   const myProjects = mockProjects.filter(
-    (p) => p.assignedFreelancerId === FREELANCER_ID || p.interestedFreelancerIds.includes(FREELANCER_ID)
+    (p) => p.assignedFreelancerIds.includes(FREELANCER_ID) || p.interestedFreelancerIds.includes(FREELANCER_ID)
   );
 
   const projects = tab === "available" ? availableProjects : myProjects;
