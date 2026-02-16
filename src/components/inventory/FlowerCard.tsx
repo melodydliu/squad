@@ -95,16 +95,7 @@ const FlowerItemCard = ({
     : undefined;
 
   return (
-    <div
-      className={cn(
-        "rounded-lg border p-3 transition-colors",
-        row.status === "approved"
-          ? "border-success/30 bg-success/5"
-          : row.status === "flagged"
-          ? "border-destructive/30 bg-destructive/5"
-          : "border-border bg-card"
-      )}
-    >
+    <div className="rounded-lg border border-border bg-card p-3 transition-colors">
       {/* Top row: name + photo */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
@@ -219,10 +210,9 @@ const StatusButton = ({
         "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium transition-colors",
         active
           ? isApproved
-            ? "bg-success/15 text-success border border-success/30"
-            : "bg-destructive/15 text-destructive border border-destructive/30"
+            ? "bg-success/15 text-success border border-success/40"
+            : "bg-warning/15 text-warning border border-warning/40"
           : "bg-muted/50 text-muted-foreground border border-transparent hover:bg-muted",
-        disabled && "opacity-70 cursor-default"
       )}
     >
       {isApproved ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
