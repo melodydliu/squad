@@ -25,7 +25,7 @@ const CreateProject = () => {
     pay: "",
     totalHours: "",
     description: "",
-    moodDescription: "",
+    designGuide: "",
     transportMethod: "personal_vehicle" as "personal_vehicle" | "uhaul_rental",
     serviceLevel: [] as ServiceLevel[],
     dayOfContact: "",
@@ -118,13 +118,13 @@ const CreateProject = () => {
           />
         </FieldWithVisibility>
 
-        <FieldWithVisibility label="Style & Mood" visible={visibility.moodDescription} onToggle={() => toggleVisibility("moodDescription")}>
-          <textarea
-            value={form.moodDescription}
-            onChange={(e) => update("moodDescription", e.target.value)}
-            placeholder="Describe the aesthetic, colors, vibe..."
-            rows={2}
-            className="w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm resize-none"
+        <FieldWithVisibility label="Design Guide" visible={visibility.designGuide} onToggle={() => toggleVisibility("designGuide")}>
+          <input
+            type="url"
+            value={form.designGuide}
+            onChange={(e) => update("designGuide", e.target.value)}
+            placeholder="Paste Canva link here..."
+            className="w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
           />
         </FieldWithVisibility>
 

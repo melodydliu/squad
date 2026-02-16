@@ -178,11 +178,13 @@ const OverviewTab = ({ project, role, assignedFreelancers }: { project: Project;
         </div>
       )}
 
-      {/* Mood */}
-      {show("moodDescription", !!project.moodDescription) && (
+      {/* Design Guide */}
+      {show("designGuide", !!project.designGuide) && (
         <div className="bg-card rounded-lg border border-border p-4 space-y-2">
-          <FieldHeader label="Style & Mood" visible={v.moodDescription !== false} fieldKey="moodDescription" role={role} />
-          <p className="text-sm text-muted-foreground leading-relaxed">{project.moodDescription}</p>
+          <FieldHeader label="Design Guide" visible={v.designGuide !== false} fieldKey="designGuide" role={role} />
+          <a href={project.designGuide} target="_blank" rel="noopener noreferrer" className="text-sm text-primary underline break-all">
+            {project.designGuide}
+          </a>
         </div>
       )}
 

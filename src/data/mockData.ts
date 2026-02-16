@@ -21,7 +21,7 @@ export interface Project {
   pay: number;
   totalHours: number;
   description: string;
-  moodDescription: string;
+  designGuide: string;
   transportMethod: TransportMethod;
   serviceLevel: ServiceLevel[];
   dayOfContact: string;
@@ -239,7 +239,7 @@ export const DEFAULT_VISIBILITY: FieldVisibility = {
   pay: true,
   totalHours: true,
   description: true,
-  moodDescription: true,
+  designGuide: true,
   transportMethod: true,
   serviceLevel: true,
   dayOfContact: true,
@@ -266,7 +266,7 @@ export const mockProjects: Project[] = [
     pay: 850,
     totalHours: 12,
     description: "Intimate garden wedding for 80 guests. Ceremony arch, 8 centerpieces, bridal bouquet, 4 bridesmaid bouquets, boutonnieres.",
-    moodDescription: "Romantic, organic, garden-style with soft pastels and lots of greenery. Think English garden meets Southern charm.",
+    designGuide: "",
     transportMethod: "personal_vehicle",
     serviceLevel: ["design", "delivery", "setup", "flip"],
     dayOfContact: "Sarah Anderson — (555) 999-1234",
@@ -306,7 +306,7 @@ export const mockProjects: Project[] = [
     pay: 1200,
     totalHours: 8,
     description: "Upscale corporate event. 12 tall centerpieces, stage arrangements, entrance installations.",
-    moodDescription: "Dramatic, luxe, modern. Deep burgundy, white, and gold accents.",
+    designGuide: "",
     transportMethod: "uhaul_rental",
     serviceLevel: ["design", "delivery", "setup", "strike"],
     dayOfContact: "Event coordinator — (555) 800-2000",
@@ -359,7 +359,7 @@ export const mockProjects: Project[] = [
     pay: 450,
     totalHours: 5,
     description: "Sweet baby shower brunch. Small centerpieces, welcome arrangement, gift table decor.",
-    moodDescription: "Soft, whimsical, spring garden. Lavender, soft yellow, white.",
+    designGuide: "",
     transportMethod: "personal_vehicle",
     serviceLevel: ["design", "delivery", "setup"],
     dayOfContact: "Mom-to-be's sister — (555) 222-3333",
@@ -401,7 +401,7 @@ export const mockProjects: Project[] = [
     pay: 600,
     totalHours: 6,
     description: "Elegant 25th anniversary dinner for 30 guests. 4 centerpieces, sweetheart table arrangement.",
-    moodDescription: "Classic elegance. White and blush roses, peonies, candles.",
+    designGuide: "",
     transportMethod: "personal_vehicle",
     serviceLevel: ["design", "delivery", "setup"],
     dayOfContact: "Mr. Thompson — (555) 444-5555",
