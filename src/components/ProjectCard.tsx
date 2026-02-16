@@ -34,14 +34,14 @@ const ProjectCard = ({ project, role }: ProjectCardProps) => {
         navigate(`/project/${project.id}?${params.toString()}`);
       }}
       className={cn(
-        "bg-card rounded-lg shadow-card hover:shadow-card-hover transition-all duration-200 cursor-pointer border overflow-hidden",
+        "bg-card rounded-2xl transition-all duration-200 cursor-pointer overflow-hidden",
         attention.needsReview
-          ? "border-warning ring-1 ring-warning/30"
-          : "border-border"
+          ? "ring-1 ring-warning/40"
+          : ""
       )}
     >
       {project.inspirationPhotos.length > 0 && (
-        <div className="h-32 overflow-hidden">
+        <div className="h-36 overflow-hidden rounded-t-2xl">
           <img
             src={project.inspirationPhotos[0]}
             alt={project.eventName}
@@ -49,9 +49,9 @@ const ProjectCard = ({ project, role }: ProjectCardProps) => {
           />
         </div>
       )}
-      <div className="p-4 space-y-3">
+      <div className="p-4 pt-3.5 space-y-3">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-display text-base font-semibold text-foreground leading-tight">
+          <h3 className="font-display text-base font-bold text-foreground leading-tight">
             {project.eventName}
           </h3>
           <StatusBadge status={project.status} project={project} />

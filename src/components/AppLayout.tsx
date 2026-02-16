@@ -35,7 +35,7 @@ const AppLayout = ({ children, title, showBack, role }: AppLayoutProps) => {
   return (
     <div className="min-h-screen bg-background flex flex-col max-w-lg mx-auto">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-lg border-b border-border px-4 py-3">
+      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg px-5 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {showBack ? (
@@ -45,7 +45,7 @@ const AppLayout = ({ children, title, showBack, role }: AppLayoutProps) => {
             ) : (
               <Flower2 className="w-6 h-6 text-primary" />
             )}
-            <h1 className="font-display text-lg font-semibold text-foreground">
+            <h1 className="font-display text-xl font-bold text-foreground">
               {title || "Bloom Studio"}
             </h1>
           </div>
@@ -59,13 +59,13 @@ const AppLayout = ({ children, title, showBack, role }: AppLayoutProps) => {
       </header>
 
       {/* Content */}
-      <main className="flex-1 px-4 py-4 pb-24 overflow-y-auto">
+      <main className="flex-1 px-5 py-4 pb-28 overflow-y-auto">
         {children}
       </main>
 
       {/* Bottom Tab Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-lg border-t border-border max-w-lg mx-auto">
-        <div className="flex items-center justify-around py-2">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-lg border-t border-border max-w-lg mx-auto">
+        <div className="flex items-center justify-around py-2.5 pb-3">
           {tabs.map((tab) => {
             const isActive = location.pathname === tab.path;
             return (
@@ -73,23 +73,23 @@ const AppLayout = ({ children, title, showBack, role }: AppLayoutProps) => {
                 key={tab.path}
                 onClick={() => navigate(tab.path)}
                 className={cn(
-                  "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors relative",
-                  isActive ? "text-primary" : "text-muted-foreground"
+                  "flex flex-col items-center gap-1 px-4 py-1.5 rounded-xl transition-colors relative",
+                  isActive ? "text-foreground" : "text-muted-foreground"
                 )}
               >
                 <div className="relative">
-                  <tab.icon className="w-5 h-5" />
+                  <tab.icon className={cn("w-5 h-5", isActive && "stroke-[2.5]")} />
                   {tab.badge && tab.badge > 0 && (
                     <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
                       {tab.badge}
                     </span>
                   )}
                 </div>
-                <span className="text-[10px] font-medium">{tab.label}</span>
+                <span className="text-[11px] font-semibold">{tab.label}</span>
                 {isActive && (
                   <motion.div
                     layoutId="activeTab"
-                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-5 h-0.5 bg-primary rounded-full"
+                    className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-foreground rounded-full"
                   />
                 )}
               </button>
