@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { mockNotifications, Notification } from "@/data/mockData";
-import { Bell, Flower2, CheckCircle2, Package, Camera, MessageCircle, X, ChevronRight } from "lucide-react";
+import { Bell, Flower2, CheckCircle2, Package, Camera, MessageCircle, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -111,29 +111,29 @@ const NotificationsPage = () => {
                         {n.contextPreview}
                       </p>
                     )}
-                    <p className="text-[11px] text-muted-foreground/70 mt-1.5">
-                      {new Date(n.createdAt).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-center gap-2 shrink-0 mt-0.5">
-                    <div className="flex items-center gap-1">
-                      {!n.read && <div className="w-2 h-2 rounded-full bg-primary" />}
-                      {isActionable && (
-                        <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
-                      )}
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <p className="text-[11px] text-muted-foreground/70">
+                        {new Date(n.createdAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                      <span className="text-muted-foreground/30">·</span>
+                      <button
+                        onClick={(e) => dismissOne(n.id, e)}
+                        className="text-[11px] text-muted-foreground/50 hover:text-destructive transition-colors"
+                      >
+                        Dismiss
+                      </button>
                     </div>
-                    <button
-                      onClick={(e) => dismissOne(n.id, e)}
-                      className="p-1 rounded-full text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all"
-                      aria-label="Dismiss notification"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0 mt-1">
+                    {!n.read && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    {isActionable && (
+                      <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
+                    )}
                   </div>
                 </motion.div>
               );
