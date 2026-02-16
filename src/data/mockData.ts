@@ -36,11 +36,34 @@ export interface Project {
   hardGoodsConfirmed: boolean;
   qualityStatus?: QualityStatus;
   qualityNote?: string;
+  flowerInventory: FlowerInventoryRow[];
+  hardGoodInventory: HardGoodInventoryRow[];
   designs: DesignUpload[];
   floralItems: FloralItem[];
   floralItemDesigns: FloralItemDesign[];
   fieldVisibility: FieldVisibility;
   createdAt: string;
+}
+
+export interface FlowerInventoryRow {
+  id: string;
+  flower: string;
+  color: string;
+  stemsInRecipe: number;
+  totalOrdered: number;
+  extras: number;
+  received: boolean;
+  qualityNotes?: string;
+  photoUrl?: string;
+}
+
+export interface HardGoodInventoryRow {
+  id: string;
+  item: string;
+  quantity: number;
+  received: boolean;
+  notes?: string;
+  photoUrl?: string;
 }
 
 export interface FloralItem {
@@ -262,6 +285,8 @@ export const mockProjects: Project[] = [
       { id: "fi5", name: "Boutonniere", quantity: 6 },
     ],
     floralItemDesigns: [],
+    flowerInventory: [],
+    hardGoodInventory: [],
     fieldVisibility: { ...DEFAULT_VISIBILITY },
     createdAt: "2026-02-14",
   },
@@ -304,6 +329,16 @@ export const mockProjects: Project[] = [
       { id: "fid1", floralItemId: "fi6", photos: [{ id: "dp1", photoUrl: "https://images.unsplash.com/photo-1487530811176-3780de880c2d?w=400" }], freelancerNote: "Centerpiece sample", approved: true, revisionRequested: false },
       { id: "fid2", floralItemId: "fi7", photos: [{ id: "dp2", photoUrl: "https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=400" }], freelancerNote: "Stage left arrangement", approved: false, revisionRequested: false },
     ],
+    flowerInventory: [
+      { id: "fl1", flower: "Burgundy Dahlia", color: "Deep Burgundy", stemsInRecipe: 36, totalOrdered: 40, extras: 4, received: true },
+      { id: "fl2", flower: "White Rose", color: "White", stemsInRecipe: 48, totalOrdered: 55, extras: 7, received: true },
+      { id: "fl3", flower: "Gold Spray Rose", color: "Gold", stemsInRecipe: 24, totalOrdered: 30, extras: 6, received: false, qualityNotes: "Some stems arrived wilted" },
+    ],
+    hardGoodInventory: [
+      { id: "hg1", item: "Tall Gold Vase", quantity: 12, received: true },
+      { id: "hg2", item: "Pillar Candle Holder", quantity: 24, received: true },
+      { id: "hg3", item: "Gold Charger Plate", quantity: 50, received: false, notes: "Vendor confirmed delayed shipment" },
+    ],
     fieldVisibility: { ...DEFAULT_VISIBILITY },
     createdAt: "2026-02-10",
   },
@@ -344,6 +379,8 @@ export const mockProjects: Project[] = [
     floralItemDesigns: [
       { id: "fid3", floralItemId: "fi10", photos: [{ id: "dp3", photoUrl: "https://images.unsplash.com/photo-1455659817273-f96807779a8a?w=400" }], freelancerNote: "Welcome arrangement", approved: false, revisionRequested: true, adminNote: "Beautiful! Can we add a few more stems of lavender?" },
     ],
+    flowerInventory: [],
+    hardGoodInventory: [],
     fieldVisibility: { ...DEFAULT_VISIBILITY },
     createdAt: "2026-02-08",
   },
@@ -381,6 +418,8 @@ export const mockProjects: Project[] = [
     floralItemDesigns: [
       { id: "fid4", floralItemId: "fi12", photos: [{ id: "dp4", photoUrl: "https://images.unsplash.com/photo-1526047932273-341f2a7631f9?w=400" }], approved: true, revisionRequested: false },
     ],
+    flowerInventory: [],
+    hardGoodInventory: [],
     fieldVisibility: { ...DEFAULT_VISIBILITY },
     createdAt: "2026-01-20",
   },

@@ -2,8 +2,11 @@ import { useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import StatusBadge from "@/components/StatusBadge";
-import { mockProjects, mockFreelancers, Project, FloralItem, FloralItemDesign, getAttentionFlags, SERVICE_LEVEL_OPTIONS } from "@/data/mockData";
-import { Calendar, MapPin, DollarSign, Truck, Check, X, Camera, AlertCircle, CheckCircle2, Image, Clock, Car, Flower2, FileText, Phone, Eye, EyeOff, Briefcase } from "lucide-react";
+import { mockProjects, mockFreelancers, Project, FloralItem, FloralItemDesign, FlowerInventoryRow, HardGoodInventoryRow, getAttentionFlags, SERVICE_LEVEL_OPTIONS } from "@/data/mockData";
+import { Calendar, MapPin, DollarSign, Truck, Check, X, Camera, AlertCircle, CheckCircle2, Image, Clock, Car, Flower2, FileText, Phone, Eye, EyeOff, Briefcase, Package } from "lucide-react";
+import CsvUpload from "@/components/inventory/CsvUpload";
+import FlowerTable from "@/components/inventory/FlowerTable";
+import HardGoodTable from "@/components/inventory/HardGoodTable";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -286,72 +289,131 @@ const FieldHeader = ({ label, visible, fieldKey, role, icon }: { label: string; 
   </div>
 );
 
-const InventoryTab = ({ project, role }: { project: Project; role: string }) => (
-  <div className="space-y-4">
-    <div className="bg-card rounded-lg border border-border p-4 space-y-4">
-      <h3 className="text-sm font-semibold text-foreground">Delivery Confirmation</h3>
+const InventoryTab = ({ project, role }: { project: Project; role: string }) => {
+  const [flowerFilter, setFlowerFilter] = useState<"all" | "issues">("all");
+  const [hardGoodFilter, setHardGoodFilter] = useState<"all" | "issues">("all");
 
-      {/* Flowers */}
-      <div className="flex items-center justify-between py-2 border-b border-border">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-foreground">Flowers Received</span>
-        </div>
-        {project.flowersConfirmed ? (
-          <span className="flex items-center gap-1 text-xs text-success font-medium">
-            <CheckCircle2 className="w-4 h-4" /> Confirmed
-          </span>
-        ) : role === "freelancer" ? (
-          <button className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-foreground">Confirm</button>
-        ) : (
-          <span className="text-xs text-muted-foreground">Pending</span>
-        )}
-      </div>
+  const flowerIssues = project.flowerInventory.filter((r) => !r.received || !!r.qualityNotes).length;
+  const hardGoodIssues = project.hardGoodInventory.filter((r) => !r.received || !!r.notes).length;
 
-      {/* Hard Goods */}
-      <div className="flex items-center justify-between py-2 border-b border-border">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-foreground">Hard Goods Received</span>
-        </div>
-        {project.hardGoodsConfirmed ? (
-          <span className="flex items-center gap-1 text-xs text-success font-medium">
-            <CheckCircle2 className="w-4 h-4" /> Confirmed
-          </span>
-        ) : role === "freelancer" ? (
-          <button className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-foreground">Confirm</button>
-        ) : (
-          <span className="text-xs text-muted-foreground">Pending</span>
-        )}
-      </div>
-
-      {/* Quality */}
-      <div className="flex items-center justify-between py-2">
-        <span className="text-sm text-foreground">Quality Check</span>
-        {project.qualityStatus === "good" ? (
-          <span className="flex items-center gap-1 text-xs text-success font-medium">
-            <CheckCircle2 className="w-4 h-4" /> Good
-          </span>
-        ) : project.qualityStatus === "issue" ? (
-          <span className="flex items-center gap-1 text-xs text-destructive font-medium">
-            <AlertCircle className="w-4 h-4" /> Issue Reported
-          </span>
-        ) : role === "freelancer" ? (
-          <div className="flex gap-2">
-            <button className="px-3 py-1.5 text-xs font-medium rounded-lg bg-success/10 text-success">Good</button>
-            <button className="px-3 py-1.5 text-xs font-medium rounded-lg bg-destructive/10 text-destructive">Issue</button>
+  return (
+    <div className="space-y-4">
+      {/* Flowers Section */}
+      <div className="bg-card rounded-lg border border-border overflow-hidden">
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Flower2 className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-semibold text-foreground">Flowers</h3>
+            {flowerIssues > 0 && (
+              <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full">
+                {flowerIssues} issue{flowerIssues > 1 ? "s" : ""}
+              </span>
+            )}
           </div>
-        ) : (
-          <span className="text-xs text-muted-foreground">Pending</span>
-        )}
+          {project.flowerInventory.length > 0 && (
+            <div className="flex gap-1">
+              {(["all", "issues"] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFlowerFilter(f)}
+                  className={cn(
+                    "px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors",
+                    flowerFilter === f
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  {f === "all" ? "All" : "Issues"}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="p-4">
+          {project.flowerInventory.length > 0 ? (
+            <FlowerTable rows={project.flowerInventory} role={role as "admin" | "freelancer"} filter={flowerFilter} />
+          ) : role === "admin" ? (
+            <CsvUpload label="Flowers" onParsed={(rows) => {
+              console.log("Flower CSV parsed:", rows);
+            }} />
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-4">No flower inventory uploaded yet</p>
+          )}
+        </div>
       </div>
-    </div>
 
-    {project.qualityNote && (
-      <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-3">
-        <p className="text-sm text-destructive">{project.qualityNote}</p>
+      {/* Hard Goods Section */}
+      <div className="bg-card rounded-lg border border-border overflow-hidden">
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Package className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-semibold text-foreground">Hard Goods</h3>
+            {hardGoodIssues > 0 && (
+              <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full">
+                {hardGoodIssues} issue{hardGoodIssues > 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+          {project.hardGoodInventory.length > 0 && (
+            <div className="flex gap-1">
+              {(["all", "issues"] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setHardGoodFilter(f)}
+                  className={cn(
+                    "px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors",
+                    hardGoodFilter === f
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  {f === "all" ? "All" : "Issues"}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="p-4">
+          {project.hardGoodInventory.length > 0 ? (
+            <HardGoodTable rows={project.hardGoodInventory} role={role as "admin" | "freelancer"} filter={hardGoodFilter} />
+          ) : role === "admin" ? (
+            <CsvUpload label="Hard Goods" onParsed={(rows) => {
+              console.log("Hard Goods CSV parsed:", rows);
+            }} />
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-4">No hard goods inventory uploaded yet</p>
+          )}
+        </div>
       </div>
-    )}
-  </div>
-);
+
+      {/* Summary */}
+      {(project.flowerInventory.length > 0 || project.hardGoodInventory.length > 0) && (
+        <div className="bg-card rounded-lg border border-border p-4">
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div>
+              <div className="text-lg font-bold text-foreground font-display">
+                {project.flowerInventory.filter((r) => r.received).length + project.hardGoodInventory.filter((r) => r.received).length}
+              </div>
+              <div className="text-[10px] text-muted-foreground font-medium">Received</div>
+            </div>
+            <div>
+              <div className="text-lg font-bold text-warning font-display">
+                {project.flowerInventory.filter((r) => !r.received).length + project.hardGoodInventory.filter((r) => !r.received).length}
+              </div>
+              <div className="text-[10px] text-muted-foreground font-medium">Pending</div>
+            </div>
+            <div>
+              <div className="text-lg font-bold text-destructive font-display">
+                {flowerIssues + hardGoodIssues}
+              </div>
+              <div className="text-[10px] text-muted-foreground font-medium">Issues</div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const DesignsTab = ({ project, role }: { project: Project; role: string }) => {
   const items = project.floralItems;
