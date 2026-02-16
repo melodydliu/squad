@@ -30,11 +30,16 @@ const AdminDashboard = () => {
   const showAssignedGroups = filter === "assigned" || filter === "all";
   const nonAssigned = filtered.filter((p) => p.status !== "assigned");
 
-  const stats = {
+  const filterCounts: Record<FilterValue, number> = {
+    all: mockProjects.length,
     unassigned: mockProjects.filter((p) => p.status === "unassigned").length,
-    needsReview: mockProjects.filter((p) => getAttentionFlags(p).needsReview).length,
+    assigned: mockProjects.filter((p) => p.status === "assigned").length,
     completed: mockProjects.filter((p) => p.status === "completed").length,
   };
+
+  const assignedNeedsReview = mockProjects.filter(
+    (p) => p.status === "assigned" && getAttentionFlags(p).needsReview
+  ).length;
 
   const renderProjectList = (projects: typeof mockProjects, startIndex = 0) =>
     projects.map((project, i) => (
@@ -51,35 +56,27 @@ const AdminDashboard = () => {
   return (
     <AppLayout role="admin" title="Dashboard">
       <div className="space-y-5">
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: "Unassigned", value: stats.unassigned, color: "bg-warning/10 text-warning" },
-            { label: "Needs Review", value: stats.needsReview, color: "bg-accent text-accent-foreground" },
-            { label: "Done", value: stats.completed, color: "bg-success/10 text-success" },
-          ].map((stat) => (
-            <div key={stat.label} className={`rounded-lg p-3 text-center ${stat.color}`}>
-              <div className="text-2xl font-bold font-display">{stat.value}</div>
-              <div className="text-xs font-medium mt-0.5">{stat.label}</div>
-            </div>
-          ))}
-        </div>
-
         {/* Filters */}
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
-          {statusFilters.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => setFilter(f.value)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                filter === f.value
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
+          {statusFilters.map((f) => {
+            const hasReviewDot = f.value === "assigned" && assignedNeedsReview > 0;
+            return (
+              <button
+                key={f.value}
+                onClick={() => setFilter(f.value)}
+                className={`relative px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                  filter === f.value
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+              >
+                {f.label} ({filterCounts[f.value]})
+                {hasReviewDot && (
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-destructive rounded-full ring-2 ring-background" />
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* Project List */}
