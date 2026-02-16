@@ -160,7 +160,7 @@ function Field({
 }) {
   return (
     <div className="space-y-1">
-      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+      <label className="text-sm font-medium text-foreground">{label}</label>
       <input
         type={type}
         value={value}
