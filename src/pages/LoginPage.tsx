@@ -58,11 +58,11 @@ const LoginPage = () => {
         className="w-full max-w-sm space-y-4"
       >
         {/* Illustration */}
-        <div className="text-center">
+        <div className="text-center -mb-2">
           <motion.img
             src={loginIllustration}
             alt="Friendly flowers illustration"
-            className="w-96 h-auto mx-auto"
+            className="w-72 h-auto mx-auto"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
