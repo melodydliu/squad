@@ -83,6 +83,7 @@ const HardGoodCardList = ({ rows, role, filter = "all" }: HardGoodCardListProps)
                   variant="approved"
                   onClick={() => handleStatusChange(row.id, "approved")}
                   disabled={role === "admin"}
+                  role={role}
                 />
                 <StatusButton
                   active={row.status === "flagged"}
@@ -159,13 +160,16 @@ const StatusButton = ({
   variant,
   onClick,
   disabled,
+  role,
 }: {
   active: boolean;
   variant: "approved" | "flagged";
   onClick: () => void;
   disabled: boolean;
+  role?: "admin" | "freelancer";
 }) => {
   const isApproved = variant === "approved";
+  const label = isApproved ? (role === "freelancer" ? "Confirmed" : "Approved") : "Flagged";
   return (
     <button
       onClick={onClick}
@@ -180,7 +184,7 @@ const StatusButton = ({
       )}
     >
       {isApproved ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
-      {isApproved ? "Approved" : "Flagged"}
+      {label}
     </button>
   );
 };
