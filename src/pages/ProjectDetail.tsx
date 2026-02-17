@@ -35,7 +35,7 @@ const ProjectDetail = () => {
   const { role: authRole, user } = useAuth();
   const roleParam = searchParams.get("role") as "admin" | "freelancer" | null;
   const role = roleParam || authRole || "admin";
-  const { projects, profiles, loading: projectsLoading } = useProjects();
+  const { projects, profiles, loading: projectsLoading, refetch } = useProjects();
   const initialProject = projects.find((p) => p.id === id);
   const initialTab = searchParams.get("tab") as "overview" | "inventory" | "designs" || "overview";
   const highlightId = searchParams.get("highlight") || undefined;
@@ -105,31 +105,95 @@ const ProjectDetail = () => {
     }
   };
 
-  const handleApproveFreelancer = (freelancerId: string) => {
-    const freelancer = mockFreelancers.find((f) => f.id === freelancerId);
+  
+
+  const handleApproveFreelancer = async (freelancerId: string) => {
+    const profile = profiles.get(freelancerId);
+    const freelancerName = profile ? `${profile.firstName} ${profile.lastName}`.trim() : "Freelancer";
     const updatedAssigned = [...project.assignedFreelancerIds, freelancerId];
     const remaining = project.designersNeeded - updatedAssigned.length;
     const isFull = remaining <= 0;
+    const newStatus = isFull ? "assigned" : project.status;
 
-    setProject({
-      ...project,
-      assignedFreelancerIds: updatedAssigned,
-      status: isFull ? "assigned" : project.status,
-    });
+    try {
+      // 1. Insert assignment
+      const { error: assignError } = await (supabase as any)
+        .from("project_assignments")
+        .insert({ project_id: project.id, user_id: freelancerId });
+      if (assignError) throw assignError;
 
-    toast.success(`${freelancer?.name || "Freelancer"} approved for ${project.eventName}`);
-
-    if (isFull) {
-      const availableNotApproved = (project.freelancerResponses || [])
-        .filter((r) => r.status === "available" && !updatedAssigned.includes(r.freelancerId));
-      if (availableNotApproved.length > 0) {
-        const names = availableNotApproved
-          .map((r) => mockFreelancers.find((f) => f.id === r.freelancerId)?.name)
-          .filter(Boolean)
-          .join(", ");
-        toast.info(`Notified ${names}: project is no longer available`);
+      // 2. Update project status if fully staffed
+      if (isFull) {
+        const { error: statusError } = await (supabase as any)
+          .from("projects")
+          .update({ status: "assigned" })
+          .eq("id", project.id);
+        if (statusError) throw statusError;
       }
-      toast.success(`${project.eventName} is now fully staffed!`);
+
+      // 3. Notify approved freelancer
+      await (supabase as any).from("notifications").insert({
+        user_id: freelancerId,
+        message: `You've been assigned to ${project.eventName}`,
+        type: "approval",
+        project_id: project.id,
+        project_name: project.eventName,
+        target_tab: "overview",
+      });
+
+      // 4. Notify admin (self-confirmation)
+      if (user) {
+        await (supabase as any).from("notifications").insert({
+          user_id: user.id,
+          message: `Freelancer assigned: ${freelancerName} to ${project.eventName}`,
+          type: "approval",
+          project_id: project.id,
+          project_name: project.eventName,
+          target_tab: "assignment",
+        });
+      }
+
+      // 5. If fully staffed, notify remaining interested freelancers
+      if (isFull) {
+        const availableNotApproved = (project.freelancerResponses || [])
+          .filter((r) => r.status === "available" && !updatedAssigned.includes(r.freelancerId));
+
+        if (availableNotApproved.length > 0) {
+          const notificationInserts = availableNotApproved.map((r) => ({
+            user_id: r.freelancerId,
+            message: `${project.eventName} is now fully staffed and no longer available.`,
+            type: "project" as const,
+            project_id: project.id,
+            project_name: project.eventName,
+          }));
+          await (supabase as any).from("notifications").insert(notificationInserts);
+
+          const names = availableNotApproved
+            .map((r) => {
+              const p = profiles.get(r.freelancerId);
+              return p ? `${p.firstName} ${p.lastName}`.trim() : null;
+            })
+            .filter(Boolean)
+            .join(", ");
+          if (names) toast.info(`Notified ${names}: project is no longer available`);
+        }
+        toast.success(`${project.eventName} is now fully staffed!`);
+      }
+
+      // 6. Update local state immediately for responsiveness
+      setProject({
+        ...project,
+        assignedFreelancerIds: updatedAssigned,
+        status: newStatus,
+      });
+
+      toast.success(`${freelancerName} approved for ${project.eventName}`);
+
+      // 7. Refetch to sync all data
+      refetch();
+    } catch (err) {
+      console.error("Error approving freelancer:", err);
+      toast.error("Failed to approve freelancer — please try again");
     }
   };
 
