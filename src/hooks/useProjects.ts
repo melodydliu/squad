@@ -249,6 +249,14 @@ export function useProjects() {
         );
       });
 
+      // Sort by closest date to today first
+      const now = new Date().getTime();
+      mapped.sort((a, b) => {
+        const diffA = Math.abs(new Date(a.dateStart).getTime() - now);
+        const diffB = Math.abs(new Date(b.dateStart).getTime() - now);
+        return diffA - diffB;
+      });
+
       setProjects(mapped);
     } catch (err) {
       console.error("Error loading projects:", err);
