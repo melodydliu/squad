@@ -71,10 +71,16 @@ const SignupPage = () => {
 
       if (error) {
         if (error.message.toLowerCase().includes("already registered")) {
-          setErrors({ email: "An account with this email already exists" });
+          setErrors({ email: "already_registered" });
         } else {
           toast.error(error.message);
         }
+        return;
+      }
+
+      // Supabase returns a user with no session for repeated signups (email already exists)
+      if (data.user && !data.session && data.user.identities?.length === 0) {
+        setErrors({ email: "already_registered" });
         return;
       }
 
@@ -152,7 +158,16 @@ const SignupPage = () => {
               maxLength={255}
               className="w-full px-3.5 py-2.5 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
             />
-            {errors.email && <p className="text-[10px] text-destructive">{errors.email}</p>}
+            {errors.email && (
+              errors.email === "already_registered" ? (
+                <p className="text-[10px] text-destructive">
+                  An account with this email already exists.{" "}
+                  <Link to="/" className="text-primary font-medium hover:underline">Sign in instead</Link>
+                </p>
+              ) : (
+                <p className="text-[10px] text-destructive">{errors.email}</p>
+              )
+            )}
           </div>
 
           <div className="space-y-1.5">
