@@ -26,7 +26,7 @@ const AppLayout = ({ children, title, showBack, role: roleProp, headerAction }: 
   const location = useLocation();
   const { role: authRole, signOut } = useAuth();
   const { unreadCount } = useNotifications();
-  const role = roleProp || authRole || "freelancer";
+  const role = roleProp || authRole;
 
   const handleLogout = async () => {
     await signOut();

@@ -68,7 +68,7 @@ const ProfilePage = () => {
   const initials = getInitials(form.firstName, form.lastName);
 
   return (
-    <AppLayout role="freelancer" title="Profile">
+    <AppLayout title="Profile">
       <div className="space-y-5">
         {/* Avatar */}
         <div className="flex flex-col items-center gap-3 pt-2">

@@ -47,7 +47,7 @@ const NotificationsPage = () => {
   };
 
   return (
-    <AppLayout role={role || "freelancer"} title="Notifications">
+    <AppLayout title="Notifications">
       <div className="space-y-3">
         {notifications.length > 0 && (
           <div className="flex items-center justify-end">
