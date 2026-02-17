@@ -364,10 +364,23 @@ const InventoryTab = ({ project, role }: {project: Project;role: string;}) => {
 
   const hasFlowers = project.flowerInventory.length > 0;
   const hasHardGoods = project.hardGoodInventory.length > 0;
+  const flowerApproved = project.flowerInventory.filter((r) => r.status === "approved").length;
   const flowerFlagged = project.flowerInventory.filter((r) => r.status === "flagged").length;
+  const hardGoodApproved = project.hardGoodInventory.filter((r) => r.status === "approved").length;
   const hardGoodFlagged = project.hardGoodInventory.filter((r) => r.status === "flagged").length;
   const flowerAllApproved = hasFlowers && flowerFlagged === 0 && project.flowerInventory.every((r) => r.status === "approved");
   const hardGoodAllApproved = hasHardGoods && hardGoodFlagged === 0 && project.hardGoodInventory.every((r) => r.status === "approved");
+
+  const flowerFilterCounts: Record<InventoryFilter, number> = {
+    all: project.flowerInventory.length,
+    approved: flowerApproved,
+    flagged: flowerFlagged,
+  };
+  const hardGoodFilterCounts: Record<InventoryFilter, number> = {
+    all: project.hardGoodInventory.length,
+    approved: hardGoodApproved,
+    flagged: hardGoodFlagged,
+  };
 
   return (
     <div className="space-y-4">
@@ -416,8 +429,7 @@ const InventoryTab = ({ project, role }: {project: Project;role: string;}) => {
                 "bg-primary text-primary-foreground" :
                 "text-muted-foreground hover:bg-muted"
               )}>
-
-                  {f.label}
+                  {f.label} ({flowerFilterCounts[f.key]})
                 </button>
             )}
             </div>
@@ -476,8 +488,7 @@ const InventoryTab = ({ project, role }: {project: Project;role: string;}) => {
                 "bg-primary text-primary-foreground" :
                 "text-muted-foreground hover:bg-muted"
               )}>
-
-                  {f.label}
+                  {f.label} ({hardGoodFilterCounts[f.key]})
                 </button>
             )}
             </div>
