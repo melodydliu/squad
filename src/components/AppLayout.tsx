@@ -63,6 +63,11 @@ const AppLayout = ({ children, title, showBack, role: roleProp, headerAction }: 
             <h1 className="font-display text-xl font-bold text-foreground">
               {title || "Bloom Studio"}
             </h1>
+            {role === "admin" && (
+              <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-primary/15 text-primary rounded-full">
+                Admin
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-1">
             {headerAction}
