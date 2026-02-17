@@ -10,11 +10,12 @@ import { motion } from "framer-motion";
 import { Plus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-type FilterValue = "all" | ProjectStatus;
+type FilterValue = "all" | ProjectStatus | "pending";
 
 const statusFilters: { label: string; value: FilterValue }[] = [
   { label: "All", value: "all" },
   { label: "Unassigned", value: "unassigned" },
+  { label: "Pending", value: "pending" },
   { label: "Assigned", value: "assigned" },
   { label: "Completed", value: "completed" },
 ];
@@ -24,8 +25,21 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const { projects, profiles, loading } = useProjects();
 
+  // Pending = unassigned projects with freelancer interest
+  const pendingProjects = projects.filter(
+    (p) => p.status === "unassigned" && p.interestedFreelancerIds.length > 0
+  );
+  // Pure unassigned = no interest yet
+  const pureUnassigned = projects.filter(
+    (p) => p.status === "unassigned" && p.interestedFreelancerIds.length === 0
+  );
+
   const filtered = filter === "all"
     ? projects
+    : filter === "pending"
+    ? pendingProjects
+    : filter === "unassigned"
+    ? pureUnassigned
     : projects.filter((p) => p.status === filter);
 
   const assignedUpcoming = filtered.filter(
@@ -39,7 +53,8 @@ const AdminDashboard = () => {
 
   const filterCounts: Record<FilterValue, number> = {
     all: projects.length,
-    unassigned: projects.filter((p) => p.status === "unassigned").length,
+    unassigned: pureUnassigned.length,
+    pending: pendingProjects.length,
     assigned: projects.filter((p) => p.status === "assigned").length,
     completed: projects.filter((p) => p.status === "completed").length,
   };
