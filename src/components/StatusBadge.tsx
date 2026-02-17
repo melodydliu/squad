@@ -8,8 +8,8 @@ interface StatusBadgeProps {
 }
 
 const SUB_CATEGORY_CONFIG = {
-  upcoming: { label: "Upcoming", color: "text-info", bgColor: "bg-info/10" },
-  in_progress: { label: "In Progress", color: "text-primary", bgColor: "bg-primary/10" },
+  upcoming: { label: "Upcoming", color: "text-info", bgColor: "bg-info/12" },
+  in_progress: { label: "In Progress", color: "text-sage", bgColor: "bg-sage/10" },
 };
 
 const StatusBadge = ({ status, project, className }: StatusBadgeProps) => {
