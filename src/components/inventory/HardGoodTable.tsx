@@ -45,7 +45,7 @@ const HardGoodTable = ({ rows, role, filter = "all" }: HardGoodTableProps) => {
                 key={row.id}
                 className={cn(
                   "border-b border-border last:border-0",
-                  row.status === "flagged" && !row.notes && "bg-warning/5",
+                  row.status !== "approved" && "bg-warning/5",
                   row.notes && row.status === "flagged" && "bg-destructive/5"
                 )}
               >

@@ -152,9 +152,9 @@ export interface Notification {
 }
 
 export const STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string; bgColor: string }> = {
-  unassigned: { label: "Unassigned", color: "text-neutral-tag", bgColor: "bg-neutral-tag-bg" },
-  assigned: { label: "Assigned", color: "text-sage", bgColor: "bg-sage/10" },
-  completed: { label: "Completed", color: "text-success", bgColor: "bg-success/12" },
+  unassigned: { label: "Unassigned", color: "text-warning", bgColor: "bg-warning/10" },
+  assigned: { label: "Assigned", color: "text-primary", bgColor: "bg-primary/10" },
+  completed: { label: "Completed", color: "text-success", bgColor: "bg-success/10" },
 };
 
 /** Staffing helpers */

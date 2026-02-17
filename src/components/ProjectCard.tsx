@@ -36,7 +36,7 @@ const ProjectCard = ({ project, role }: ProjectCardProps) => {
         navigate(`/project/${project.id}?${params.toString()}`);
       }}
       className={cn(
-        "bg-card rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-200 cursor-pointer overflow-hidden",
+        "bg-card rounded-2xl transition-all duration-200 cursor-pointer overflow-hidden",
         attention.needsReview
           ? "ring-1 ring-warning/40"
           : ""
@@ -51,7 +51,7 @@ const ProjectCard = ({ project, role }: ProjectCardProps) => {
           />
         </div>
       )}
-      <div className="p-5 pt-4 space-y-3.5">
+      <div className="p-4 pt-3.5 space-y-3">
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-display text-base font-bold text-foreground leading-tight">
             {project.eventName}
@@ -101,7 +101,7 @@ const ProjectCard = ({ project, role }: ProjectCardProps) => {
               </span>
             </div>
             {remaining > 0 && (
-              <span className="text-[10px] font-semibold text-neutral-tag bg-neutral-tag-bg px-2 py-0.5 rounded-full whitespace-nowrap">
+              <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full whitespace-nowrap">
                 Needs {remaining} more
               </span>
             )}
