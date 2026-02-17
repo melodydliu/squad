@@ -57,19 +57,16 @@ const LoginPage = () => {
         transition={{ duration: 0.5 }}
         className="w-full max-w-sm space-y-8"
       >
-        {/* Logo & Illustration */}
-        <div className="text-center space-y-4">
+        {/* Illustration */}
+        <div className="text-center">
           <motion.img
             src={loginIllustration}
             alt="Friendly flowers illustration"
-            className="w-48 h-auto mx-auto"
+            className="w-72 h-auto mx-auto"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
           />
-          <h1 className="font-display text-3xl font-bold text-foreground">
-            Bloom Studio
-          </h1>
         </div>
 
         {/* Form */}
