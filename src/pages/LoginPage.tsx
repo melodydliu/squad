@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Flower2 } from "lucide-react";
 import { motion } from "framer-motion";
+import loginIllustration from "@/assets/login-illustration.png";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -57,11 +57,16 @@ const LoginPage = () => {
         transition={{ duration: 0.5 }}
         className="w-full max-w-sm space-y-8"
       >
-        {/* Logo */}
-        <div className="text-center space-y-3">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10">
-            <Flower2 className="w-8 h-8 text-primary" />
-          </div>
+        {/* Logo & Illustration */}
+        <div className="text-center space-y-4">
+          <motion.img
+            src={loginIllustration}
+            alt="Friendly flowers illustration"
+            className="w-48 h-auto mx-auto"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+          />
           <h1 className="font-display text-3xl font-bold text-foreground">
             Bloom Studio
           </h1>
