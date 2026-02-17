@@ -4,7 +4,10 @@ import AppLayout from "@/components/AppLayout";
 import { Camera, Plus, Trash2, Eye, EyeOff } from "lucide-react";
 import MobilePhotoUpload from "@/components/MobilePhotoUpload";
 import { ServiceLevel, SERVICE_LEVEL_OPTIONS, DEFAULT_VISIBILITY, FieldVisibility } from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface FloralItemRow {
   id: string;
@@ -17,6 +20,8 @@ const makeId = () => `new-${nextId++}`;
 
 const CreateProject = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     eventName: "",
     dateStart: "",
@@ -34,6 +39,8 @@ const CreateProject = () => {
   });
   const [floralItems, setFloralItems] = useState<FloralItemRow[]>([]);
   const [visibility, setVisibility] = useState<FieldVisibility>({ ...DEFAULT_VISIBILITY });
+  const [inspirationPhotos, setInspirationPhotos] = useState<File[]>([]);
+  const [inspirationPreviews, setInspirationPreviews] = useState<string[]>([]);
 
   const update = (key: string, value: string) => setForm((p) => ({ ...p, [key]: value }));
 
@@ -62,9 +69,92 @@ const CreateProject = () => {
     setFloralItems((prev) => prev.filter((item) => item.id !== id));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleInspirationPhoto = (file: File) => {
+    setInspirationPhotos((prev) => [...prev, file]);
+    const url = URL.createObjectURL(file);
+    setInspirationPreviews((prev) => [...prev, url]);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate("/admin");
+    if (!user || !form.eventName.trim() || !form.dateStart) {
+      toast.error("Please fill in at least the event name and start date.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // Insert project
+      const { data: project, error: projErr } = await (supabase as any)
+        .from("projects")
+        .insert({
+          created_by: user.id,
+          event_name: form.eventName.trim(),
+          date_start: form.dateStart,
+          date_end: form.dateEnd || form.dateStart,
+          timeline: form.timeline.trim(),
+          location: form.location.trim(),
+          pay: Number(form.pay) || 0,
+          total_hours: Number(form.totalHours) || 0,
+          description: form.description.trim(),
+          design_guide: form.designGuide.trim(),
+          transport_method: form.transportMethod,
+          service_level: form.serviceLevel,
+          day_of_contact: form.dayOfContact.trim(),
+          designers_needed: Math.max(1, Number(form.designersNeeded) || 1),
+          field_visibility: visibility,
+        })
+        .select()
+        .single();
+
+      if (projErr || !project) {
+        toast.error("Failed to create project.");
+        console.error(projErr);
+        return;
+      }
+
+      // Insert floral items
+      const validItems = floralItems.filter((fi) => fi.name.trim());
+      if (validItems.length > 0) {
+        await (supabase as any).from("floral_items").insert(
+          validItems.map((fi, i) => ({
+            project_id: project.id,
+            name: fi.name.trim(),
+            quantity: Math.max(1, Number(fi.quantity) || 1),
+            sort_order: i,
+          }))
+        );
+      }
+
+      // Upload inspiration photos
+      for (let i = 0; i < inspirationPhotos.length; i++) {
+        const file = inspirationPhotos[i];
+        const path = `${user.id}/inspiration/${project.id}/${Date.now()}-${i}.${file.name.split(".").pop()}`;
+        const { error: uploadErr } = await supabase.storage
+          .from("project-photos")
+          .upload(path, file);
+
+        if (!uploadErr) {
+          const { data: { publicUrl } } = supabase.storage
+            .from("project-photos")
+            .getPublicUrl(path);
+
+          await (supabase as any).from("inspiration_photos").insert({
+            project_id: project.id,
+            photo_url: publicUrl,
+            sort_order: i,
+          });
+        }
+      }
+
+      toast.success("Project created!");
+      navigate("/admin");
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -79,25 +169,12 @@ const CreateProject = () => {
           <InputField label="End Date" type="date" value={form.dateEnd} onChange={(v) => update("dateEnd", v)} />
         </div>
 
-        {/* Timeline */}
         <FieldWithVisibility label="Timeline" visible={visibility.timeline} onToggle={() => toggleVisibility("timeline")}>
-          <textarea
-            value={form.timeline}
-            onChange={(e) => update("timeline", e.target.value)}
-            placeholder="Schedule notes, timing instructions, load-in details..."
-            rows={3}
-            className="w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm resize-none"
-          />
+          <textarea value={form.timeline} onChange={(e) => update("timeline", e.target.value)} placeholder="Schedule notes, timing instructions, load-in details..." rows={3} className="w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm resize-none" />
         </FieldWithVisibility>
 
         <FieldWithVisibility label="Location" visible={visibility.location} onToggle={() => toggleVisibility("location")}>
-          <input
-            type="text"
-            value={form.location}
-            onChange={(e) => update("location", e.target.value)}
-            placeholder="Venue name & city"
-            className="w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-          />
+          <input type="text" value={form.location} onChange={(e) => update("location", e.target.value)} placeholder="Venue name & city" className="w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" />
         </FieldWithVisibility>
 
         <div className="grid grid-cols-2 gap-3">
@@ -110,126 +187,71 @@ const CreateProject = () => {
         </div>
 
         <FieldWithVisibility label="Description" visible={visibility.description} onToggle={() => toggleVisibility("description")}>
-          <textarea
-            value={form.description}
-            onChange={(e) => update("description", e.target.value)}
-            placeholder="What arrangements are needed? How many pieces?"
-            rows={3}
-            className="w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm resize-none"
-          />
+          <textarea value={form.description} onChange={(e) => update("description", e.target.value)} placeholder="What arrangements are needed? How many pieces?" rows={3} className="w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm resize-none" />
         </FieldWithVisibility>
 
         <FieldWithVisibility label="Design Guide" visible={visibility.designGuide} onToggle={() => toggleVisibility("designGuide")}>
-          <input
-            type="url"
-            value={form.designGuide}
-            onChange={(e) => update("designGuide", e.target.value)}
-            placeholder="Paste Canva link here..."
-            className="w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-          />
+          <input type="url" value={form.designGuide} onChange={(e) => update("designGuide", e.target.value)} placeholder="Paste Canva link here..." className="w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" />
         </FieldWithVisibility>
 
-        {/* Service Level */}
         <FieldWithVisibility label="Service Level" visible={visibility.serviceLevel} onToggle={() => toggleVisibility("serviceLevel")}>
           <div className="flex flex-wrap gap-2">
             {SERVICE_LEVEL_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => toggleService(opt.value)}
-                className={cn(
-                  "py-2 px-4 rounded-lg text-xs font-medium border transition-colors",
-                  form.serviceLevel.includes(opt.value)
-                    ? "border-primary bg-primary/5 text-primary"
-                    : "border-input bg-card text-muted-foreground"
-                )}
-              >
+              <button key={opt.value} type="button" onClick={() => toggleService(opt.value)} className={cn("py-2 px-4 rounded-lg text-xs font-medium border transition-colors", form.serviceLevel.includes(opt.value) ? "border-primary bg-primary/5 text-primary" : "border-input bg-card text-muted-foreground")}>
                 {opt.label}
               </button>
             ))}
           </div>
         </FieldWithVisibility>
 
-        {/* Floral Items */}
         <FieldWithVisibility label="Floral Items" visible={visibility.floralItems} onToggle={() => toggleVisibility("floralItems")}>
           {floralItems.length > 0 && (
             <div className="space-y-2 mb-2">
               {floralItems.map((item) => (
                 <div key={item.id} className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={item.name}
-                    onChange={(e) => updateFloralItem(item.id, "name", e.target.value)}
-                    placeholder="Item name"
-                    className="flex-1 px-3 py-2.5 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-                  />
-                  <input
-                    type="number"
-                    min="1"
-                    value={item.quantity}
-                    onChange={(e) => updateFloralItem(item.id, "quantity", e.target.value)}
-                    className="w-16 px-3 py-2.5 rounded-lg border border-input bg-card text-foreground text-sm text-center focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Qty"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeFloralItem(item.id)}
-                    className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                  >
+                  <input type="text" value={item.name} onChange={(e) => updateFloralItem(item.id, "name", e.target.value)} placeholder="Item name" className="flex-1 px-3 py-2.5 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" />
+                  <input type="number" min="1" value={item.quantity} onChange={(e) => updateFloralItem(item.id, "quantity", e.target.value)} className="w-16 px-3 py-2.5 rounded-lg border border-input bg-card text-foreground text-sm text-center focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Qty" />
+                  <button type="button" onClick={() => removeFloralItem(item.id)} className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               ))}
             </div>
           )}
-          <button
-            type="button"
-            onClick={addFloralItem}
-            className="w-full py-3 rounded-lg border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2 text-sm font-medium"
-          >
-            <Plus className="w-4 h-4" />
-            Add Floral Item
+          <button type="button" onClick={addFloralItem} className="w-full py-3 rounded-lg border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2 text-sm font-medium">
+            <Plus className="w-4 h-4" /> Add Floral Item
           </button>
         </FieldWithVisibility>
 
-        {/* Delivery Vehicle */}
         <FieldWithVisibility label="Delivery Vehicle" visible={visibility.transportMethod} onToggle={() => toggleVisibility("transportMethod")}>
           <div className="grid grid-cols-2 gap-2">
-            {[
-              { value: "personal_vehicle" as const, label: "Personal Vehicle" },
-              { value: "uhaul_rental" as const, label: "U-Haul Rental" },
-            ].map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => update("transportMethod", opt.value)}
-                className={cn(
-                  "py-3 px-3 rounded-lg text-xs font-medium border transition-colors",
-                  form.transportMethod === opt.value
-                    ? "border-primary bg-primary/5 text-primary"
-                    : "border-input bg-card text-muted-foreground"
-                )}
-              >
+            {([{ value: "personal_vehicle" as const, label: "Personal Vehicle" }, { value: "uhaul_rental" as const, label: "U-Haul Rental" }]).map((opt) => (
+              <button key={opt.value} type="button" onClick={() => update("transportMethod", opt.value)} className={cn("py-3 px-3 rounded-lg text-xs font-medium border transition-colors", form.transportMethod === opt.value ? "border-primary bg-primary/5 text-primary" : "border-input bg-card text-muted-foreground")}>
                 {opt.label}
               </button>
             ))}
           </div>
         </FieldWithVisibility>
 
-        {/* Day-of Contact */}
         <FieldWithVisibility label="Day-of Contact" visible={visibility.dayOfContact} onToggle={() => toggleVisibility("dayOfContact")}>
-          <input
-            type="text"
-            value={form.dayOfContact}
-            onChange={(e) => update("dayOfContact", e.target.value)}
-            placeholder="Name & phone number"
-            className="w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-          />
+          <input type="text" value={form.dayOfContact} onChange={(e) => update("dayOfContact", e.target.value)} placeholder="Name & phone number" className="w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" />
         </FieldWithVisibility>
 
-        {/* Photo Upload Placeholder */}
         <FieldWithVisibility label="Inspiration Photos" visible={visibility.inspirationPhotos} onToggle={() => toggleVisibility("inspirationPhotos")}>
-          <MobilePhotoUpload onPhoto={() => {}} multiple>
+          {inspirationPreviews.length > 0 && (
+            <div className="grid grid-cols-3 gap-2 mb-2">
+              {inspirationPreviews.map((url, i) => (
+                <div key={i} className="aspect-square rounded-lg overflow-hidden relative">
+                  <img src={url} alt="" className="w-full h-full object-cover" />
+                  <button type="button" onClick={() => {
+                    setInspirationPhotos((p) => p.filter((_, idx) => idx !== i));
+                    setInspirationPreviews((p) => p.filter((_, idx) => idx !== i));
+                  }} className="absolute top-1 right-1 w-5 h-5 bg-foreground/60 text-background rounded-full flex items-center justify-center text-xs">×</button>
+                </div>
+              ))}
+            </div>
+          )}
+          <MobilePhotoUpload onPhoto={handleInspirationPhoto} multiple>
             <div className="w-full py-8 rounded-lg border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors flex flex-col items-center gap-2">
               <Camera className="w-5 h-5" />
               <span className="text-xs font-medium">Tap to upload photos</span>
@@ -237,36 +259,19 @@ const CreateProject = () => {
           </MobilePhotoUpload>
         </FieldWithVisibility>
 
-        <button
-          type="submit"
-          className="w-full py-3.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity"
-        >
-          Publish Project
+        <button type="submit" disabled={saving} className="w-full py-3.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
+          {saving ? "Creating…" : "Publish Project"}
         </button>
       </form>
     </AppLayout>
   );
 };
 
-/** Field wrapper with visibility toggle */
-const FieldWithVisibility = ({
-  label, visible, onToggle, children,
-}: {
-  label: string; visible: boolean; onToggle: () => void; children: React.ReactNode;
-}) => (
+const FieldWithVisibility = ({ label, visible, onToggle, children }: { label: string; visible: boolean; onToggle: () => void; children: React.ReactNode }) => (
   <div className="space-y-1.5">
     <div className="flex items-center justify-between">
       <label className="text-sm font-medium text-foreground">{label}</label>
-      <button
-        type="button"
-        onClick={onToggle}
-        className={cn(
-          "flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors",
-          visible
-            ? "text-primary bg-primary/10"
-            : "text-muted-foreground bg-muted"
-        )}
-      >
+      <button type="button" onClick={onToggle} className={cn("flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors", visible ? "text-primary bg-primary/10" : "text-muted-foreground bg-muted")}>
         {visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
         {visible ? "Visible" : "Hidden"}
       </button>
@@ -275,20 +280,10 @@ const FieldWithVisibility = ({
   </div>
 );
 
-const InputField = ({
-  label, value, onChange, placeholder, type = "text",
-}: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string;
-}) => (
+const InputField = ({ label, value, onChange, placeholder, type = "text" }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) => (
   <div className="space-y-1.5">
     <label className="text-sm font-medium text-foreground">{label}</label>
-    <input
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-    />
+    <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" />
   </div>
 );
 

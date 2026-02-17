@@ -14,8 +14,10 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import MobilePhotoUpload from "@/components/MobilePhotoUpload";
+import { useProjects, FreelancerProfile } from "@/hooks/useProjects";
+import { useAuth } from "@/hooks/useAuth";
 
-/** Notify assigned freelancers (mock) when admin edits a field */
+/** Notify assigned freelancers when admin edits a field */
 const notifyFreelancersOfEdit = (project: Project, fieldName: string, message?: string) => {
   const assignedNames = project.assignedFreelancerIds
     .map((id) => mockFreelancers.find((f) => f.id === id)?.name)
@@ -29,13 +31,24 @@ const notifyFreelancersOfEdit = (project: Project, fieldName: string, message?: 
 const ProjectDetail = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
-  const role = searchParams.get("role") as "admin" | "freelancer" || "admin";
-  const initialProject = mockProjects.find((p) => p.id === id);
+  const { role: authRole } = useAuth();
+  const roleParam = searchParams.get("role") as "admin" | "freelancer" | null;
+  const role = roleParam || authRole || "admin";
+  const { projects, profiles, loading: projectsLoading } = useProjects();
+  const initialProject = projects.find((p) => p.id === id);
   const initialTab = searchParams.get("tab") as "overview" | "inventory" | "designs" || "overview";
   const highlightId = searchParams.get("highlight") || undefined;
   const [activeTab, setActiveTab] = useState<"overview" | "inventory" | "designs">(initialTab);
   const [project, setProject] = useState<Project | undefined>(initialProject);
   const [floralDesigns, setFloralDesigns] = useState<FloralItemDesign[]>(initialProject?.floralItemDesigns ?? []);
+
+  // Sync when projects load from DB
+  useEffect(() => {
+    if (initialProject && !project) {
+      setProject(initialProject);
+      setFloralDesigns(initialProject.floralItemDesigns);
+    }
+  }, [initialProject]);
 
   // Scroll to highlighted element after render
   useEffect(() => {
@@ -120,7 +133,10 @@ const ProjectDetail = () => {
   };
 
   const assignedFreelancers = project.assignedFreelancerIds
-    .map((fId) => mockFreelancers.find((f) => f.id === fId))
+    .map((fId) => {
+      const p = profiles.get(fId);
+      return p ? { id: fId, name: `${p.firstName} ${p.lastName}`.trim(), avatarUrl: p.avatarUrl, email: p.email } : null;
+    })
     .filter(Boolean);
 
   const tabs = [
@@ -211,7 +227,7 @@ const ProjectDetail = () => {
         {/* Tab Content */}
         <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
           {activeTab === "overview" &&
-            <OverviewTab project={project} role={role} assignedFreelancers={assignedFreelancers} onApprove={handleApproveFreelancer} isEditable={isEditable} isLocked={isLocked} onUpdateField={updateProjectField} floralDesigns={floralDesigns} onUpdateDesigns={setFloralDesigns} onToggleVisibility={toggleFieldVisibility} />
+            <OverviewTab project={project} role={role} assignedFreelancers={assignedFreelancers} onApprove={handleApproveFreelancer} isEditable={isEditable} isLocked={isLocked} onUpdateField={updateProjectField} floralDesigns={floralDesigns} onUpdateDesigns={setFloralDesigns} onToggleVisibility={toggleFieldVisibility} profiles={profiles} />
           }
           {activeTab === "inventory" &&
             <InventoryTab project={project} role={role} isEditable={isEditable} isLocked={isLocked} />
@@ -225,7 +241,7 @@ const ProjectDetail = () => {
   );
 };
 
-const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable, isLocked, onUpdateField, floralDesigns, onUpdateDesigns, onToggleVisibility }: {
+const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable, isLocked, onUpdateField, floralDesigns, onUpdateDesigns, onToggleVisibility, profiles }: {
   project: Project;
   role: string;
   assignedFreelancers: any[];
@@ -236,6 +252,7 @@ const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable
   floralDesigns: FloralItemDesign[];
   onUpdateDesigns: React.Dispatch<React.SetStateAction<FloralItemDesign[]>>;
   onToggleVisibility: (fieldKey: string) => void;
+  profiles: Map<string, FreelancerProfile>;
 }) => {
   const v = project.fieldVisibility;
   const [newItemName, setNewItemName] = useState("");
@@ -552,7 +569,7 @@ const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable
 
       {/* Freelancer Responses Panel */}
       {role === "admin" && project.status === "unassigned" &&
-        <FreelancerResponsePanel project={project} onApprove={onApprove} />
+        <FreelancerResponsePanel project={project} profiles={profiles} onApprove={onApprove} />
       }
 
       {/* Assigned Freelancers */}

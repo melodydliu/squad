@@ -1,16 +1,17 @@
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Flower2, LayoutDashboard, Plus, Bell, User, LogOut, ChevronLeft, Settings, Phone } from "lucide-react";
-import { mockNotifications } from "@/data/mockData";
+import { Flower2, LayoutDashboard, Bell, User, LogOut, ChevronLeft, Settings, Phone } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface AppLayoutProps {
   children: ReactNode;
   title?: string;
   showBack?: boolean;
-  role: "admin" | "freelancer";
+  role?: "admin" | "freelancer";
   headerAction?: ReactNode;
 }
 
@@ -20,10 +21,17 @@ const ADMIN_CONTACT = {
   email: "jane@bloomstudio.com",
 };
 
-const AppLayout = ({ children, title, showBack, role, headerAction }: AppLayoutProps) => {
+const AppLayout = ({ children, title, showBack, role: roleProp, headerAction }: AppLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const unreadCount = mockNotifications.filter((n) => !n.read).length;
+  const { role: authRole, signOut } = useAuth();
+  const { unreadCount } = useNotifications();
+  const role = roleProp || authRole || "freelancer";
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   const adminTabs = [
     { path: "/admin", icon: LayoutDashboard, label: "Dashboard" },
@@ -82,7 +90,7 @@ const AppLayout = ({ children, title, showBack, role, headerAction }: AppLayoutP
               <Settings className="w-4 h-4" />
             </button>
             <button
-              onClick={() => navigate("/")}
+              onClick={handleLogout}
               className="p-2 text-muted-foreground hover:text-foreground transition-colors"
             >
               <LogOut className="w-4 h-4" />
