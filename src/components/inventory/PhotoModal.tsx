@@ -1,11 +1,12 @@
 import { X, Camera, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import MobilePhotoUpload from "@/components/MobilePhotoUpload";
 
 interface PhotoModalProps {
   open: boolean;
   onClose: () => void;
   photoUrl?: string;
-  onUpload?: () => void;
+  onUpload?: (file: File) => void;
   onRemove?: () => void;
   readOnly?: boolean;
 }
@@ -40,13 +41,12 @@ const PhotoModal = ({ open, onClose, photoUrl, onUpload, onRemove, readOnly }: P
 
           {!readOnly && (
             <div className="flex gap-2">
-              <button
-                onClick={onUpload}
-                className="flex-1 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center gap-1.5"
-              >
-                <Camera className="w-3.5 h-3.5" />
-                {photoUrl ? "Replace" : "Upload"}
-              </button>
+              <MobilePhotoUpload onPhoto={(file) => onUpload?.(file)} className="flex-1">
+                <div className="py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center gap-1.5">
+                  <Camera className="w-3.5 h-3.5" />
+                  {photoUrl ? "Replace" : "Upload"}
+                </div>
+              </MobilePhotoUpload>
               {photoUrl && onRemove && (
                 <button
                   onClick={onRemove}

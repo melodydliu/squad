@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { Camera, Plus, Trash2, Eye, EyeOff } from "lucide-react";
+import MobilePhotoUpload from "@/components/MobilePhotoUpload";
 import { ServiceLevel, SERVICE_LEVEL_OPTIONS, DEFAULT_VISIBILITY, FieldVisibility } from "@/data/mockData";
 import { cn } from "@/lib/utils";
 
@@ -228,13 +229,12 @@ const CreateProject = () => {
 
         {/* Photo Upload Placeholder */}
         <FieldWithVisibility label="Inspiration Photos" visible={visibility.inspirationPhotos} onToggle={() => toggleVisibility("inspirationPhotos")}>
-          <button
-            type="button"
-            className="w-full py-8 rounded-lg border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors flex flex-col items-center gap-2"
-          >
-            <Camera className="w-5 h-5" />
-            <span className="text-xs font-medium">Tap to upload photos</span>
-          </button>
+          <MobilePhotoUpload onPhoto={() => {}} multiple>
+            <div className="w-full py-8 rounded-lg border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors flex flex-col items-center gap-2">
+              <Camera className="w-5 h-5" />
+              <span className="text-xs font-medium">Tap to upload photos</span>
+            </div>
+          </MobilePhotoUpload>
         </FieldWithVisibility>
 
         <button
