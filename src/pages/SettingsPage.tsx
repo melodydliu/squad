@@ -35,7 +35,7 @@ const SettingsPage = ({ role }: SettingsPageProps) => {
   const { preferences, toggle, events } = useNotificationPreferences(role);
   const groups = groupByCategory(events);
   const [openCategories, setOpenCategories] = useState<Set<string>>(
-    () => new Set(groups.map((g) => g.category))
+    () => new Set()
   );
 
   const toggleCategory = (cat: string) => {
