@@ -351,9 +351,9 @@ const FieldHeader = ({ label, visible, fieldKey, role, icon }: {label: string;vi
 
 
 type InventoryFilter = "all" | "approved" | "flagged";
-const getFilterOptions = (role: string): {key: InventoryFilter;label: string;}[] => [
+const getFilterOptions = (_role: string): {key: InventoryFilter;label: string;}[] => [
   { key: "all", label: "All" },
-  { key: "approved", label: role === "freelancer" ? "Confirmed" : "Approved" },
+  { key: "approved", label: "Confirmed" },
   { key: "flagged", label: "Flagged" },
 ];
 
@@ -395,7 +395,7 @@ const InventoryTab = ({ project, role }: {project: Project;role: string;}) => {
               <h3 className="text-sm font-semibold text-foreground">Flowers</h3>
               {flowerAllApproved ?
               <span className="text-[10px] font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full">
-                  {role === "freelancer" ? "All Confirmed" : "All Approved"}
+                  All Confirmed
                 </span> :
               flowerFlagged > 0 ?
               <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full">
@@ -456,7 +456,7 @@ const InventoryTab = ({ project, role }: {project: Project;role: string;}) => {
               <h3 className="text-sm font-semibold text-foreground">Hard Goods</h3>
               {hardGoodAllApproved ?
               <span className="text-[10px] font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full">
-                  {role === "freelancer" ? "All Confirmed" : "All Approved"}
+                  All Confirmed
                 </span> :
               hardGoodFlagged > 0 ?
               <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full">
