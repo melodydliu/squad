@@ -42,9 +42,8 @@ const ProjectCard = ({ project, role, profiles }: ProjectCardProps) => {
       const response = project.freelancerResponses.find((r) => r.freelancerId === userId);
       if (response?.status === "available") {
         freelancerStatus = "pending_approval";
-      } else if (response?.status === "unavailable") {
-        freelancerStatus = "unavailable";
       }
+      // "unavailable" → no badge shown; card is grayed out by the dashboard
     }
   }
 
