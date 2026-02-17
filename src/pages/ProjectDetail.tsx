@@ -5,7 +5,7 @@ import StatusBadge from "@/components/StatusBadge";
 import FreelancerResponsePanel from "@/components/FreelancerResponsePanel";
 import InlineEdit from "@/components/InlineEdit";
 import { mockProjects, mockFreelancers, mockNotifications, Project, FloralItem, FloralItemDesign, FlowerInventoryRow, HardGoodInventoryRow, getAttentionFlags, getDesignersRemaining, SERVICE_LEVEL_OPTIONS, Notification, DesignStatus, getCompletionProgress } from "@/data/mockData";
-import { Calendar, MapPin, DollarSign, Truck, Check, X, Camera, AlertCircle, CheckCircle2, Image, Clock, Car, Flower2, FileText, Phone, Eye, EyeOff, Briefcase, Package, Upload, RefreshCw, Trash2, Lock } from "lucide-react";
+import { Calendar, MapPin, DollarSign, Truck, Check, X, Camera, AlertCircle, CheckCircle2, Image, Clock, Car, Flower2, FileText, Phone, Eye, EyeOff, Briefcase, Package, Upload, RefreshCw, Trash2, Lock, Plus } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import CsvUpload from "@/components/inventory/CsvUpload";
 import FlowerCardList from "@/components/inventory/FlowerCard";
@@ -34,6 +34,7 @@ const ProjectDetail = () => {
   const highlightId = searchParams.get("highlight") || undefined;
   const [activeTab, setActiveTab] = useState<"overview" | "inventory" | "designs">(initialTab);
   const [project, setProject] = useState<Project | undefined>(initialProject);
+  const [floralDesigns, setFloralDesigns] = useState<FloralItemDesign[]>(initialProject?.floralItemDesigns ?? []);
 
   // Scroll to highlighted element after render
   useEffect(() => {
@@ -187,13 +188,13 @@ const ProjectDetail = () => {
         {/* Tab Content */}
         <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
           {activeTab === "overview" &&
-            <OverviewTab project={project} role={role} assignedFreelancers={assignedFreelancers} onApprove={handleApproveFreelancer} isEditable={isEditable} isLocked={isLocked} onUpdateField={updateProjectField} />
+            <OverviewTab project={project} role={role} assignedFreelancers={assignedFreelancers} onApprove={handleApproveFreelancer} isEditable={isEditable} isLocked={isLocked} onUpdateField={updateProjectField} floralDesigns={floralDesigns} onUpdateDesigns={setFloralDesigns} />
           }
           {activeTab === "inventory" &&
             <InventoryTab project={project} role={role} isEditable={isEditable} isLocked={isLocked} />
           }
           {activeTab === "designs" &&
-            <DesignsTab project={project} role={role} isEditable={isEditable} isLocked={isLocked} />
+            <DesignsTab project={project} role={role} isEditable={isEditable} isLocked={isLocked} designs={floralDesigns} onUpdateDesigns={setFloralDesigns} />
           }
         </motion.div>
       </div>
@@ -201,7 +202,7 @@ const ProjectDetail = () => {
   );
 };
 
-const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable, isLocked, onUpdateField }: {
+const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable, isLocked, onUpdateField, floralDesigns, onUpdateDesigns }: {
   project: Project;
   role: string;
   assignedFreelancers: any[];
@@ -209,8 +210,14 @@ const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable
   isEditable: boolean;
   isLocked: boolean;
   onUpdateField: (field: string, value: any, label: string) => void;
+  floralDesigns: FloralItemDesign[];
+  onUpdateDesigns: React.Dispatch<React.SetStateAction<FloralItemDesign[]>>;
 }) => {
   const v = project.fieldVisibility;
+  const [newItemName, setNewItemName] = useState("");
+  const [newItemQty, setNewItemQty] = useState(1);
+  const [showAddItem, setShowAddItem] = useState(false);
+  const [removeConfirm, setRemoveConfirm] = useState<FloralItem | null>(null);
 
   const show = (key: string, hasContent: boolean) => {
     if (role === "admin") return true;
@@ -323,38 +330,147 @@ const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable
       }
 
       {/* Floral Items */}
-      {show("floralItems", project.floralItems.length > 0) && project.floralItems.length > 0 &&
+      {(show("floralItems", project.floralItems.length > 0) || isEditable) &&
         <div className="bg-card rounded-lg border border-border p-4 space-y-3">
-          <FieldHeader label="Floral Items" visible={v.floralItems !== false} fieldKey="floralItems" role={role} icon={<Flower2 className="w-4 h-4 text-primary" />} />
-          <div className="space-y-2">
-            {project.floralItems.map((item) =>
-              <div key={item.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
-                <InlineEdit
-                  value={item.name}
-                  editable={isEditable}
-                  locked={isLocked}
-                  onSave={(v) => {
-                    const updated = project.floralItems.map((fi) => fi.id === item.id ? { ...fi, name: v } : fi);
-                    onUpdateField("floralItems", updated, `Floral Item "${item.name}"`);
-                  }}
-                  displayClassName="text-sm"
-                />
-                <InlineEdit
-                  value={item.quantity}
-                  type="number"
-                  editable={isEditable}
-                  locked={isLocked}
-                  onSave={(v) => {
-                    const updated = project.floralItems.map((fi) => fi.id === item.id ? { ...fi, quantity: Number(v) } : fi);
-                    onUpdateField("floralItems", updated, `Floral Item qty`);
-                  }}
-                  renderDisplay={(v) => <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">×{v}</span>}
-                />
-              </div>
+          <div className="flex items-center justify-between">
+            <FieldHeader label="Floral Items" visible={v.floralItems !== false} fieldKey="floralItems" role={role} icon={<Flower2 className="w-4 h-4 text-primary" />} />
+            {isEditable && (
+              <button
+                onClick={() => setShowAddItem(true)}
+                className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add
+              </button>
             )}
           </div>
+
+          {project.floralItems.length > 0 ? (
+            <div className="space-y-1">
+              {project.floralItems.map((item) => {
+                const hasDesign = floralDesigns.some((d) => d.floralItemId === item.id && (d.photos.length > 0 || d.freelancerNote));
+                return (
+                  <div key={item.id} className="flex items-center gap-2 py-1.5 border-b border-border last:border-0">
+                    <InlineEdit
+                      value={item.name}
+                      editable={isEditable}
+                      locked={isLocked}
+                      onSave={(v) => {
+                        const updated = project.floralItems.map((fi) => fi.id === item.id ? { ...fi, name: v } : fi);
+                        onUpdateField("floralItems", updated, `Floral Item "${item.name}"`);
+                      }}
+                      displayClassName="text-sm flex-1"
+                    />
+                    <InlineEdit
+                      value={item.quantity}
+                      type="number"
+                      editable={isEditable}
+                      locked={isLocked}
+                      onSave={(v) => {
+                        const updated = project.floralItems.map((fi) => fi.id === item.id ? { ...fi, quantity: Number(v) } : fi);
+                        onUpdateField("floralItems", updated, `Floral Item qty`);
+                      }}
+                      renderDisplay={(v) => <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">×{v}</span>}
+                    />
+                    {isEditable && (
+                      <button
+                        onClick={() => {
+                          if (hasDesign) {
+                            setRemoveConfirm(item);
+                          } else {
+                            const updated = project.floralItems.filter((fi) => fi.id !== item.id);
+                            onUpdateField("floralItems", updated, `Removed "${item.name}"`);
+                            onUpdateDesigns((prev) => prev.filter((d) => d.floralItemId !== item.id));
+                          }
+                        }}
+                        className="p-1 rounded text-muted-foreground/50 hover:text-destructive transition-colors shrink-0"
+                        title="Remove item"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-2">No floral items yet</p>
+          )}
+
+          {/* Add Item Form */}
+          {showAddItem && (
+            <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+              <p className="text-xs font-medium text-foreground">New Floral Item</p>
+              <div className="flex gap-2">
+                <input
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                  placeholder="Item name..."
+                  className="flex-1 rounded-md border border-input bg-background px-2.5 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  autoFocus
+                />
+                <input
+                  type="number"
+                  value={newItemQty}
+                  onChange={(e) => setNewItemQty(Math.max(1, Number(e.target.value)))}
+                  className="w-16 rounded-md border border-input bg-background px-2.5 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-center"
+                  min={1}
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    if (!newItemName.trim()) return;
+                    const newItem: FloralItem = {
+                      id: `fi-${Date.now()}`,
+                      name: newItemName.trim(),
+                      quantity: newItemQty,
+                    };
+                    const updated = [...project.floralItems, newItem];
+                    onUpdateField("floralItems", updated, `Added "${newItem.name}"`);
+                    setNewItemName("");
+                    setNewItemQty(1);
+                    setShowAddItem(false);
+                  }}
+                  disabled={!newItemName.trim()}
+                  className="flex-1 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium disabled:opacity-50"
+                >
+                  Add Item
+                </button>
+                <button
+                  onClick={() => { setNewItemName(""); setNewItemQty(1); setShowAddItem(false); }}
+                  className="py-1.5 px-3 rounded-lg bg-muted text-muted-foreground text-xs font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       }
+
+      {/* Remove Confirmation Dialog */}
+      {removeConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 backdrop-blur-sm" onClick={() => setRemoveConfirm(null)}>
+          <div className="bg-card rounded-xl shadow-elevated w-[85vw] max-w-sm p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-sm font-semibold text-foreground">Remove "{removeConfirm.name}"?</h3>
+            <p className="text-xs text-muted-foreground">This item has existing design uploads. Removing it will archive the design history.</p>
+            <div className="flex gap-2">
+              <button onClick={() => setRemoveConfirm(null)} className="flex-1 py-2.5 rounded-lg bg-muted text-muted-foreground text-sm font-medium">Cancel</button>
+              <button
+                onClick={() => {
+                  const updated = project.floralItems.filter((fi) => fi.id !== removeConfirm.id);
+                  onUpdateField("floralItems", updated, `Removed "${removeConfirm.name}"`);
+                  // Archive: keep designs but they won't render since floralItem is gone
+                  setRemoveConfirm(null);
+                }}
+                className="flex-1 py-2.5 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium"
+              >
+                Remove & Archive
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Description */}
       {show("description", !!project.description) &&
@@ -646,9 +762,8 @@ const DESIGN_FILTER_OPTIONS: { key: DesignFilter; label: string }[] = [
   { key: "approved", label: "Approved" },
 ];
 
-const DesignsTab = ({ project, role, isEditable, isLocked }: { project: Project; role: string; isEditable: boolean; isLocked: boolean }) => {
+const DesignsTab = ({ project, role, isEditable, isLocked, designs, onUpdateDesigns }: { project: Project; role: string; isEditable: boolean; isLocked: boolean; designs: FloralItemDesign[]; onUpdateDesigns: React.Dispatch<React.SetStateAction<FloralItemDesign[]>> }) => {
   const items = project.floralItems;
-  const [designs, setDesigns] = useState(project.floralItemDesigns);
   const [filter, setFilter] = useState<DesignFilter>("all");
 
   if (items.length === 0) {
@@ -664,7 +779,7 @@ const DesignsTab = ({ project, role, isEditable, isLocked }: { project: Project;
 
   const handleApproveDesign = (designId: string) => {
     if (isLocked) return;
-    setDesigns((prev) =>
+    onUpdateDesigns((prev) =>
       prev.map((d) =>
         d.id === designId
           ? { ...d, designStatus: "approved" as DesignStatus, approved: true, revisionRequested: false, adminNote: undefined }
@@ -677,7 +792,7 @@ const DesignsTab = ({ project, role, isEditable, isLocked }: { project: Project;
 
   const handleRequestRevision = (designId: string, note: string) => {
     if (isLocked) return;
-    setDesigns((prev) =>
+    onUpdateDesigns((prev) =>
       prev.map((d) => {
         if (d.id !== designId) return d;
         const revision = {
