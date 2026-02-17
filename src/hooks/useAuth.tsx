@@ -38,15 +38,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    let roleLoaded = false;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          // Defer role fetch to avoid deadlock with Supabase auth
-          setTimeout(() => fetchRole(session.user.id), 0);
+          // Only fetch role on initial sign-in, not on token refreshes
+          if (!roleLoaded) {
+            setTimeout(() => fetchRole(session.user.id).then(() => { roleLoaded = true; }), 0);
+          }
         } else {
           setRole(null);
+          roleLoaded = false;
         }
         setLoading(false);
       }
@@ -55,8 +60,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchRole(session.user.id);
+      if (session?.user && !roleLoaded) {
+        fetchRole(session.user.id).then(() => { roleLoaded = true; });
       }
       setLoading(false);
     });
