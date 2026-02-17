@@ -15,12 +15,12 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 /** Notify assigned freelancers (mock) when admin edits a field */
-const notifyFreelancersOfEdit = (project: Project, fieldName: string) => {
+const notifyFreelancersOfEdit = (project: Project, fieldName: string, message?: string) => {
   const assignedNames = project.assignedFreelancerIds
     .map((id) => mockFreelancers.find((f) => f.id === id)?.name)
     .filter(Boolean);
   if (assignedNames.length === 0) return;
-  toast.info(`Notified ${assignedNames.join(", ")}: "${fieldName}" was updated`, {
+  toast.info(`Notified ${assignedNames.join(", ")}: ${message || `"${fieldName}" was updated`}`, {
     duration: 3000,
   });
 };
@@ -63,9 +63,33 @@ const ProjectDetail = () => {
   const isLocked = role === "admin" && project.status === "completed";
 
   const updateProjectField = (field: string, value: any, label: string) => {
-    setProject((prev) => prev ? { ...prev, [field]: value } : prev);
-    notifyFreelancersOfEdit(project, label);
+    setProject((prev) => {
+      if (!prev) return prev;
+      const isVisible = prev.fieldVisibility[field] !== false;
+      const updated = { ...prev, [field]: value };
+      // Notify only if the field is visible to freelancers (or will be)
+      if (isVisible) {
+        notifyFreelancersOfEdit(prev, label, "Project details updated");
+      }
+      return updated;
+    });
     toast.success(`${label} updated`);
+  };
+
+  const toggleFieldVisibility = (fieldKey: string) => {
+    if (!project || isLocked) return;
+    const wasVisible = project.fieldVisibility[fieldKey] !== false;
+    const newVisibility = { ...project.fieldVisibility, [fieldKey]: !wasVisible };
+    setProject((prev) => prev ? { ...prev, fieldVisibility: newVisibility } : prev);
+
+    if (!wasVisible) {
+      // Hidden → Visible: notify freelancers (info newly released)
+      notifyFreelancersOfEdit(project, fieldKey, "Project details updated");
+      toast.success("Section now visible to freelancers");
+    } else {
+      // Visible → Hidden: NO notification
+      toast("Section hidden from freelancers — no notification sent", { duration: 2000 });
+    }
   };
 
   const handleApproveFreelancer = (freelancerId: string) => {
@@ -188,7 +212,7 @@ const ProjectDetail = () => {
         {/* Tab Content */}
         <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
           {activeTab === "overview" &&
-            <OverviewTab project={project} role={role} assignedFreelancers={assignedFreelancers} onApprove={handleApproveFreelancer} isEditable={isEditable} isLocked={isLocked} onUpdateField={updateProjectField} floralDesigns={floralDesigns} onUpdateDesigns={setFloralDesigns} />
+            <OverviewTab project={project} role={role} assignedFreelancers={assignedFreelancers} onApprove={handleApproveFreelancer} isEditable={isEditable} isLocked={isLocked} onUpdateField={updateProjectField} floralDesigns={floralDesigns} onUpdateDesigns={setFloralDesigns} onToggleVisibility={toggleFieldVisibility} />
           }
           {activeTab === "inventory" &&
             <InventoryTab project={project} role={role} isEditable={isEditable} isLocked={isLocked} />
@@ -202,7 +226,7 @@ const ProjectDetail = () => {
   );
 };
 
-const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable, isLocked, onUpdateField, floralDesigns, onUpdateDesigns }: {
+const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable, isLocked, onUpdateField, floralDesigns, onUpdateDesigns, onToggleVisibility }: {
   project: Project;
   role: string;
   assignedFreelancers: any[];
@@ -212,6 +236,7 @@ const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable
   onUpdateField: (field: string, value: any, label: string) => void;
   floralDesigns: FloralItemDesign[];
   onUpdateDesigns: React.Dispatch<React.SetStateAction<FloralItemDesign[]>>;
+  onToggleVisibility: (fieldKey: string) => void;
 }) => {
   const v = project.fieldVisibility;
   const [newItemName, setNewItemName] = useState("");
@@ -243,7 +268,7 @@ const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable
         </div>
 
         {show("location", !!project.location) &&
-          <FieldRow icon={<MapPin className="w-4 h-4" />} visible={v.location !== false} fieldKey="location" role={role}>
+          <FieldRow icon={<MapPin className="w-4 h-4" />} visible={v.location !== false} fieldKey="location" role={role} onToggle={onToggleVisibility} isLocked={isLocked}>
             <InlineEdit
               value={project.location}
               editable={isEditable}
@@ -255,7 +280,7 @@ const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable
         }
 
         {show("transportMethod", true) &&
-          <FieldRow icon={<Car className="w-4 h-4" />} visible={v.transportMethod !== false} fieldKey="transportMethod" role={role}>
+          <FieldRow icon={<Car className="w-4 h-4" />} visible={v.transportMethod !== false} fieldKey="transportMethod" role={role} onToggle={onToggleVisibility} isLocked={isLocked}>
             <InlineEdit
               value={project.transportMethod === "personal_vehicle" ? "Personal Vehicle" : "U-Haul Rental"}
               editable={isEditable}
@@ -269,7 +294,7 @@ const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable
         }
 
         {show("pay", true) &&
-          <FieldRow icon={<DollarSign className="w-4 h-4" />} visible={v.pay !== false} fieldKey="pay" role={role}>
+          <FieldRow icon={<DollarSign className="w-4 h-4" />} visible={v.pay !== false} fieldKey="pay" role={role} onToggle={onToggleVisibility} isLocked={isLocked}>
             <InlineEdit
               value={project.pay}
               type="number"
@@ -282,7 +307,7 @@ const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable
         }
 
         {show("totalHours", true) &&
-          <FieldRow icon={<Clock className="w-4 h-4" />} visible={v.totalHours !== false} fieldKey="totalHours" role={role}>
+          <FieldRow icon={<Clock className="w-4 h-4" />} visible={v.totalHours !== false} fieldKey="totalHours" role={role} onToggle={onToggleVisibility} isLocked={isLocked}>
             <InlineEdit
               value={project.totalHours}
               type="number"
@@ -295,13 +320,13 @@ const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable
         }
 
         {show("serviceLevel", project.serviceLevel.length > 0) &&
-          <FieldRow icon={<Briefcase className="w-4 h-4" />} visible={v.serviceLevel !== false} fieldKey="serviceLevel" role={role}>
+          <FieldRow icon={<Briefcase className="w-4 h-4" />} visible={v.serviceLevel !== false} fieldKey="serviceLevel" role={role} onToggle={onToggleVisibility} isLocked={isLocked}>
             {serviceLevelLabels}
           </FieldRow>
         }
 
         {show("dayOfContact", !!project.dayOfContact) &&
-          <FieldRow icon={<Phone className="w-4 h-4" />} visible={v.dayOfContact !== false} fieldKey="dayOfContact" role={role}>
+          <FieldRow icon={<Phone className="w-4 h-4" />} visible={v.dayOfContact !== false} fieldKey="dayOfContact" role={role} onToggle={onToggleVisibility} isLocked={isLocked}>
             <InlineEdit
               value={project.dayOfContact}
               editable={isEditable}
@@ -316,7 +341,7 @@ const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable
       {/* Timeline */}
       {show("timeline", !!project.timeline) &&
         <div className="bg-card rounded-lg border border-border p-4 space-y-2">
-          <FieldHeader label="Timeline" visible={v.timeline !== false} fieldKey="timeline" role={role} />
+          <FieldHeader label="Timeline" visible={v.timeline !== false} fieldKey="timeline" role={role} onToggle={onToggleVisibility} isLocked={isLocked} />
           <InlineEdit
             value={project.timeline}
             type="textarea"
@@ -333,7 +358,7 @@ const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable
       {(show("floralItems", project.floralItems.length > 0) || isEditable) &&
         <div className="bg-card rounded-lg border border-border p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <FieldHeader label="Floral Items" visible={v.floralItems !== false} fieldKey="floralItems" role={role} icon={<Flower2 className="w-4 h-4 text-primary" />} />
+            <FieldHeader label="Floral Items" visible={v.floralItems !== false} fieldKey="floralItems" role={role} icon={<Flower2 className="w-4 h-4 text-primary" />} onToggle={onToggleVisibility} isLocked={isLocked} />
             {isEditable && (
               <button
                 onClick={() => setShowAddItem(true)}
@@ -475,7 +500,7 @@ const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable
       {/* Description */}
       {show("description", !!project.description) &&
         <div className="bg-card rounded-lg border border-border p-4 space-y-2">
-          <FieldHeader label="Description" visible={v.description !== false} fieldKey="description" role={role} />
+          <FieldHeader label="Description" visible={v.description !== false} fieldKey="description" role={role} onToggle={onToggleVisibility} isLocked={isLocked} />
           <InlineEdit
             value={project.description}
             type="textarea"
@@ -491,7 +516,7 @@ const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable
       {/* Design Guide */}
       {show("designGuide", !!project.designGuide) &&
         <div className="bg-card rounded-lg border border-border p-4 space-y-2">
-          <FieldHeader label="Design Guide" visible={v.designGuide !== false} fieldKey="designGuide" role={role} />
+          <FieldHeader label="Design Guide" visible={v.designGuide !== false} fieldKey="designGuide" role={role} onToggle={onToggleVisibility} isLocked={isLocked} />
           <InlineEdit
             value={project.designGuide}
             type="url"
@@ -515,7 +540,7 @@ const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable
       {/* Inspiration Photos */}
       {show("inspirationPhotos", project.inspirationPhotos.length > 0) && project.inspirationPhotos.length > 0 &&
         <div className="space-y-2">
-          <FieldHeader label="Inspiration" visible={v.inspirationPhotos !== false} fieldKey="inspirationPhotos" role={role} />
+          <FieldHeader label="Inspiration" visible={v.inspirationPhotos !== false} fieldKey="inspirationPhotos" role={role} onToggle={onToggleVisibility} isLocked={isLocked} />
           <div className="grid grid-cols-2 gap-2">
             {project.inspirationPhotos.map((url, i) =>
               <div key={i} className="rounded-lg overflow-hidden aspect-square">
@@ -565,29 +590,32 @@ const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable
 };
 
 /** Inline visibility toggle for admin */
-const VisibilityToggle = ({ visible, fieldKey }: { visible: boolean; fieldKey: string }) =>
+const VisibilityToggle = ({ visible, fieldKey, onToggle, disabled }: { visible: boolean; fieldKey: string; onToggle?: (key: string) => void; disabled?: boolean }) =>
   <button
     type="button"
+    onClick={(e) => { e.stopPropagation(); onToggle?.(fieldKey); }}
+    disabled={disabled}
     className={cn(
       "ml-auto p-1 rounded transition-colors",
+      disabled ? "opacity-40 cursor-not-allowed" : "",
       visible ? "text-primary hover:text-primary/80" : "text-muted-foreground/40 hover:text-muted-foreground"
     )}
-    title={visible ? "Visible to freelancer" : "Hidden from freelancer"}>
+    title={disabled ? "Locked (completed)" : visible ? "Visible to freelancer — click to hide" : "Hidden from freelancer — click to show"}>
     {visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
   </button>;
 
-const FieldRow = ({ icon, children, visible, fieldKey, role }: { icon: React.ReactNode; children: React.ReactNode; visible: boolean; fieldKey: string; role: string }) =>
-  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+const FieldRow = ({ icon, children, visible, fieldKey, role, onToggle, isLocked }: { icon: React.ReactNode; children: React.ReactNode; visible: boolean; fieldKey: string; role: string; onToggle?: (key: string) => void; isLocked?: boolean }) =>
+  <div className={cn("flex items-center gap-2 text-sm text-muted-foreground", !visible && role === "admin" && "opacity-50")}>
     {icon}
     <span className="flex-1">{children}</span>
-    {role === "admin" && <VisibilityToggle visible={visible} fieldKey={fieldKey} />}
+    {role === "admin" && <VisibilityToggle visible={visible} fieldKey={fieldKey} onToggle={onToggle} disabled={isLocked} />}
   </div>;
 
-const FieldHeader = ({ label, visible, fieldKey, role, icon }: { label: string; visible: boolean; fieldKey: string; role: string; icon?: React.ReactNode }) =>
-  <div className="flex items-center gap-2">
+const FieldHeader = ({ label, visible, fieldKey, role, icon, onToggle, isLocked }: { label: string; visible: boolean; fieldKey: string; role: string; icon?: React.ReactNode; onToggle?: (key: string) => void; isLocked?: boolean }) =>
+  <div className={cn("flex items-center gap-2", !visible && role === "admin" && "opacity-50")}>
     {icon}
     <h3 className="text-sm font-semibold text-foreground">{label}</h3>
-    {role === "admin" && <VisibilityToggle visible={visible} fieldKey={fieldKey} />}
+    {role === "admin" && <VisibilityToggle visible={visible} fieldKey={fieldKey} onToggle={onToggle} disabled={isLocked} />}
   </div>;
 
 type InventoryFilter = "all" | "approved" | "flagged";
