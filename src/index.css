@@ -55,7 +55,9 @@
     --peach: 20 65% 70%;
     --peach-light: 20 55% 92%;
     --success: 152 38% 48%;
-    --warning: 38 85% 55%;
+    --warning: 24 88% 50%;
+    --neutral-tag: 25 12% 55%;
+    --neutral-tag-bg: 25 12% 92%;
     --info: 210 50% 58%;
 
     /* Fonts */
