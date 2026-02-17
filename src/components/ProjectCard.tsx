@@ -101,7 +101,7 @@ const ProjectCard = ({ project, role }: ProjectCardProps) => {
               </span>
             </div>
             {remaining > 0 && (
-              <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full whitespace-nowrap">
+              <span className="text-[10px] font-semibold text-neutral-tag bg-neutral-tag-bg px-2 py-0.5 rounded-full whitespace-nowrap">
                 Needs {remaining} more
               </span>
             )}

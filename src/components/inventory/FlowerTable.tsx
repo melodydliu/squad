@@ -48,7 +48,7 @@ const FlowerTable = ({ rows, role, filter = "all" }: FlowerTableProps) => {
                 key={row.id}
                 className={cn(
                   "border-b border-border last:border-0",
-                  row.status !== "approved" && "bg-warning/5",
+                  row.status === "flagged" && !row.qualityNotes && "bg-warning/5",
                   row.qualityNotes && "bg-destructive/5"
                 )}
               >

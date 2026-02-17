@@ -21,7 +21,7 @@ const StatusBadge = ({ status, project, className }: StatusBadgeProps) => {
       <span
         className={cn(
           "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium",
-          "bg-warning/10 text-warning",
+          "bg-neutral-tag-bg text-neutral-tag",
           className
         )}
       >

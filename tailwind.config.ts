@@ -69,6 +69,8 @@ export default {
         },
         success: "hsl(var(--success))",
         warning: "hsl(var(--warning))",
+        "neutral-tag": "hsl(var(--neutral-tag))",
+        "neutral-tag-bg": "hsl(var(--neutral-tag-bg))",
         info: "hsl(var(--info))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
