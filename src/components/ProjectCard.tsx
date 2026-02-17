@@ -1,6 +1,7 @@
-import { Project, mockFreelancers, getAttentionFlags, getAssignedSubCategory, getDesignersAssigned, getDesignersRemaining, isPartiallyFilled } from "@/data/mockData";
+import { Project, mockFreelancers, getAttentionFlags, getAssignedSubCategory, getDesignersAssigned, getDesignersRemaining, isPartiallyFilled, getCompletionProgress } from "@/data/mockData";
 import StatusBadge from "./StatusBadge";
-import { Calendar, MapPin, DollarSign, Users, AlertCircle } from "lucide-react";
+import { Calendar, MapPin, DollarSign, Users, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ const ProjectCard = ({ project, role }: ProjectCardProps) => {
   const partiallyFilled = isPartiallyFilled(project);
 
   const attention = role === "admin" ? getAttentionFlags(project) : { needsReview: false, reasons: [] };
+  const completion = role === "admin" && project.status === "assigned" ? getCompletionProgress(project) : null;
 
   return (
     <motion.div
@@ -115,6 +117,34 @@ const ProjectCard = ({ project, role }: ProjectCardProps) => {
                 ? `Assigned: ${assignedFreelancers.map(f => f!.name).join(", ")}`
                 : `${project.interestedFreelancerIds.length} interested`}
             </span>
+          </div>
+        )}
+
+        {/* Completion progress for assigned projects */}
+        {completion && !completion.isComplete && (completion.designsTotal > 0 || completion.inventoryTotal > 0) && (
+          <div className="space-y-1.5 pt-1 border-t border-border">
+            {completion.designsTotal > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-muted-foreground w-16 shrink-0">Designs</span>
+                <Progress value={(completion.designsApproved / completion.designsTotal) * 100} className="h-1.5 flex-1" />
+                <span className="text-[10px] text-muted-foreground whitespace-nowrap">{completion.designsApproved}/{completion.designsTotal}</span>
+              </div>
+            )}
+            {completion.inventoryTotal > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-muted-foreground w-16 shrink-0">Inventory</span>
+                <Progress value={(completion.inventoryApproved / completion.inventoryTotal) * 100} className="h-1.5 flex-1" />
+                <span className="text-[10px] text-muted-foreground whitespace-nowrap">{completion.inventoryApproved}/{completion.inventoryTotal}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Project Complete badge */}
+        {completion?.isComplete && (
+          <div className="flex items-center gap-2 pt-1 border-t border-success/20">
+            <CheckCircle2 className="w-3.5 h-3.5 text-success flex-shrink-0" />
+            <span className="text-xs text-success font-semibold">Project Complete</span>
           </div>
         )}
       </div>
