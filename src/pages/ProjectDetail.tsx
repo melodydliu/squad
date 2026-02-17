@@ -3,8 +3,9 @@ import { useParams, useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import StatusBadge from "@/components/StatusBadge";
 import FreelancerResponsePanel from "@/components/FreelancerResponsePanel";
+import InlineEdit from "@/components/InlineEdit";
 import { mockProjects, mockFreelancers, mockNotifications, Project, FloralItem, FloralItemDesign, FlowerInventoryRow, HardGoodInventoryRow, getAttentionFlags, getDesignersRemaining, SERVICE_LEVEL_OPTIONS, Notification, DesignStatus, getCompletionProgress } from "@/data/mockData";
-import { Calendar, MapPin, DollarSign, Truck, Check, X, Camera, AlertCircle, CheckCircle2, Image, Clock, Car, Flower2, FileText, Phone, Eye, EyeOff, Briefcase, Package, Upload, RefreshCw, Trash2 } from "lucide-react";
+import { Calendar, MapPin, DollarSign, Truck, Check, X, Camera, AlertCircle, CheckCircle2, Image, Clock, Car, Flower2, FileText, Phone, Eye, EyeOff, Briefcase, Package, Upload, RefreshCw, Trash2, Lock } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import CsvUpload from "@/components/inventory/CsvUpload";
 import FlowerCardList from "@/components/inventory/FlowerCard";
@@ -12,6 +13,17 @@ import HardGoodCardList from "@/components/inventory/HardGoodCard";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+/** Notify assigned freelancers (mock) when admin edits a field */
+const notifyFreelancersOfEdit = (project: Project, fieldName: string) => {
+  const assignedNames = project.assignedFreelancerIds
+    .map((id) => mockFreelancers.find((f) => f.id === id)?.name)
+    .filter(Boolean);
+  if (assignedNames.length === 0) return;
+  toast.info(`Notified ${assignedNames.join(", ")}: "${fieldName}" was updated`, {
+    duration: 3000,
+  });
+};
 
 const ProjectDetail = () => {
   const { id } = useParams();
@@ -46,6 +58,15 @@ const ProjectDetail = () => {
       </AppLayout>);
   }
 
+  const isEditable = role === "admin" && project.status !== "completed";
+  const isLocked = role === "admin" && project.status === "completed";
+
+  const updateProjectField = (field: string, value: any, label: string) => {
+    setProject((prev) => prev ? { ...prev, [field]: value } : prev);
+    notifyFreelancersOfEdit(project, label);
+    toast.success(`${label} updated`);
+  };
+
   const handleApproveFreelancer = (freelancerId: string) => {
     const freelancer = mockFreelancers.find((f) => f.id === freelancerId);
     const updatedAssigned = [...project.assignedFreelancerIds, freelancerId];
@@ -58,10 +79,8 @@ const ProjectDetail = () => {
       status: isFull ? "assigned" : project.status,
     });
 
-    // Notification for approved freelancer
     toast.success(`${freelancer?.name || "Freelancer"} approved for ${project.eventName}`);
 
-    // If fully staffed, notify remaining available freelancers
     if (isFull) {
       const availableNotApproved = (project.freelancerResponses || [])
         .filter((r) => r.status === "available" && !updatedAssigned.includes(r.freelancerId));
@@ -81,10 +100,10 @@ const ProjectDetail = () => {
     .filter(Boolean);
 
   const tabs = [
-  { key: "overview" as const, label: "Overview" },
-  { key: "inventory" as const, label: "Inventory" },
-  { key: "designs" as const, label: "Designs" }];
-
+    { key: "overview" as const, label: "Overview" },
+    { key: "inventory" as const, label: "Inventory" },
+    { key: "designs" as const, label: "Designs" },
+  ];
 
   const completion = getCompletionProgress(project);
 
@@ -103,29 +122,40 @@ const ProjectDetail = () => {
             )}
           </div>
           <div className="text-right">
-            <span className="text-lg font-bold font-display text-foreground">${project.pay}</span>
-            <span className="text-xs text-muted-foreground ml-1.5">· {project.totalHours}h</span>
+            <InlineEdit
+              value={project.pay}
+              type="number"
+              editable={isEditable}
+              locked={isLocked}
+              onSave={(v) => updateProjectField("pay", Number(v), "Pay")}
+              renderDisplay={(v) => (
+                <span>
+                  <span className="text-lg font-bold font-display text-foreground">${v}</span>
+                  <span className="text-xs text-muted-foreground ml-1.5">· {project.totalHours}h</span>
+                </span>
+              )}
+            />
           </div>
         </div>
 
         {/* Tabs */}
         <div className="flex bg-muted rounded-lg p-1">
           {tabs.map((tab) =>
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={cn(
-              "flex-1 py-2 text-xs font-medium rounded-md transition-all",
-              activeTab === tab.key ?
-              "bg-card text-foreground shadow-sm" :
-              "text-muted-foreground"
-            )}>
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={cn(
+                "flex-1 py-2 text-xs font-medium rounded-md transition-all",
+                activeTab === tab.key
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground"
+              )}>
               {tab.label}
             </button>
           )}
         </div>
 
-        {/* Completion progress bar (admin, assigned, not yet complete) */}
+        {/* Completion progress bar */}
         {role === "admin" && project.status === "assigned" && !completion.isComplete && (completion.designsTotal > 0 || completion.inventoryTotal > 0) && (
           <div className="bg-card rounded-lg border border-border p-3 space-y-2">
             <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Approval Progress</h4>
@@ -146,41 +176,56 @@ const ProjectDetail = () => {
           </div>
         )}
 
+        {/* Locked banner for completed projects */}
+        {isLocked && (
+          <div className="flex items-center gap-2 bg-muted/50 border border-border rounded-lg px-4 py-2.5">
+            <Lock className="w-4 h-4 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground font-medium">This project is completed — fields are locked.</span>
+          </div>
+        )}
+
         {/* Tab Content */}
         <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
           {activeTab === "overview" &&
-          <OverviewTab project={project} role={role} assignedFreelancers={assignedFreelancers} onApprove={handleApproveFreelancer} />
+            <OverviewTab project={project} role={role} assignedFreelancers={assignedFreelancers} onApprove={handleApproveFreelancer} isEditable={isEditable} isLocked={isLocked} onUpdateField={updateProjectField} />
           }
           {activeTab === "inventory" &&
-          <InventoryTab project={project} role={role} />
+            <InventoryTab project={project} role={role} isEditable={isEditable} isLocked={isLocked} />
           }
           {activeTab === "designs" &&
-          <DesignsTab project={project} role={role} />
+            <DesignsTab project={project} role={role} isEditable={isEditable} isLocked={isLocked} />
           }
         </motion.div>
       </div>
-    </AppLayout>);
-
+    </AppLayout>
+  );
 };
 
-const OverviewTab = ({ project, role, assignedFreelancers, onApprove }: {project: Project;role: string;assignedFreelancers: any[];onApprove: (id: string) => void;}) => {
+const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable, isLocked, onUpdateField }: {
+  project: Project;
+  role: string;
+  assignedFreelancers: any[];
+  onApprove: (id: string) => void;
+  isEditable: boolean;
+  isLocked: boolean;
+  onUpdateField: (field: string, value: any, label: string) => void;
+}) => {
   const v = project.fieldVisibility;
 
-  /** Whether a field should be shown: admin always sees all, freelancer only if visible + has content */
   const show = (key: string, hasContent: boolean) => {
     if (role === "admin") return true;
     return hasContent && v[key] !== false;
   };
 
-  const serviceLevelLabels = project.serviceLevel.
-  map((s) => SERVICE_LEVEL_OPTIONS.find((o) => o.value === s)?.label ?? s).
-  join(", ");
+  const serviceLevelLabels = project.serviceLevel
+    .map((s) => SERVICE_LEVEL_OPTIONS.find((o) => o.value === s)?.label ?? s)
+    .join(", ");
 
   return (
     <div className="space-y-4">
       {/* Details Card */}
       <div className="bg-card rounded-lg border border-border p-4 space-y-3">
-        {/* Date — always visible */}
+        {/* Date */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Calendar className="w-4 h-4" />
           <span>
@@ -191,123 +236,206 @@ const OverviewTab = ({ project, role, assignedFreelancers, onApprove }: {project
         </div>
 
         {show("location", !!project.location) &&
-        <FieldRow icon={<MapPin className="w-4 h-4" />} visible={v.location !== false} fieldKey="location" role={role}>
-            {project.location}
+          <FieldRow icon={<MapPin className="w-4 h-4" />} visible={v.location !== false} fieldKey="location" role={role}>
+            <InlineEdit
+              value={project.location}
+              editable={isEditable}
+              locked={isLocked}
+              onSave={(v) => onUpdateField("location", v, "Location")}
+              placeholder="Add location..."
+            />
           </FieldRow>
         }
 
         {show("transportMethod", true) &&
-        <FieldRow icon={<Car className="w-4 h-4" />} visible={v.transportMethod !== false} fieldKey="transportMethod" role={role}>
-            {project.transportMethod === "personal_vehicle" ? "Personal Vehicle" : "U-Haul Rental"}
+          <FieldRow icon={<Car className="w-4 h-4" />} visible={v.transportMethod !== false} fieldKey="transportMethod" role={role}>
+            <InlineEdit
+              value={project.transportMethod === "personal_vehicle" ? "Personal Vehicle" : "U-Haul Rental"}
+              editable={isEditable}
+              locked={isLocked}
+              onSave={(v) => {
+                const method = v.toLowerCase().includes("u-haul") ? "uhaul_rental" : "personal_vehicle";
+                onUpdateField("transportMethod", method, "Transport Method");
+              }}
+            />
           </FieldRow>
         }
 
         {show("pay", true) &&
-        <FieldRow icon={<DollarSign className="w-4 h-4" />} visible={v.pay !== false} fieldKey="pay" role={role}>
-            <span className="font-medium text-inherit">${project.pay}</span>
+          <FieldRow icon={<DollarSign className="w-4 h-4" />} visible={v.pay !== false} fieldKey="pay" role={role}>
+            <InlineEdit
+              value={project.pay}
+              type="number"
+              editable={isEditable}
+              locked={isLocked}
+              onSave={(v) => onUpdateField("pay", Number(v), "Pay")}
+              renderDisplay={(v) => <span className="font-medium">${v}</span>}
+            />
           </FieldRow>
         }
 
         {show("totalHours", true) &&
-        <FieldRow icon={<Clock className="w-4 h-4" />} visible={v.totalHours !== false} fieldKey="totalHours" role={role}>
-            {project.totalHours} hours
+          <FieldRow icon={<Clock className="w-4 h-4" />} visible={v.totalHours !== false} fieldKey="totalHours" role={role}>
+            <InlineEdit
+              value={project.totalHours}
+              type="number"
+              editable={isEditable}
+              locked={isLocked}
+              onSave={(v) => onUpdateField("totalHours", Number(v), "Total Hours")}
+              renderDisplay={(v) => <span>{v} hours</span>}
+            />
           </FieldRow>
         }
 
         {show("serviceLevel", project.serviceLevel.length > 0) &&
-        <FieldRow icon={<Briefcase className="w-4 h-4" />} visible={v.serviceLevel !== false} fieldKey="serviceLevel" role={role}>
+          <FieldRow icon={<Briefcase className="w-4 h-4" />} visible={v.serviceLevel !== false} fieldKey="serviceLevel" role={role}>
             {serviceLevelLabels}
           </FieldRow>
         }
 
         {show("dayOfContact", !!project.dayOfContact) &&
-        <FieldRow icon={<Phone className="w-4 h-4" />} visible={v.dayOfContact !== false} fieldKey="dayOfContact" role={role}>
-            {project.dayOfContact}
+          <FieldRow icon={<Phone className="w-4 h-4" />} visible={v.dayOfContact !== false} fieldKey="dayOfContact" role={role}>
+            <InlineEdit
+              value={project.dayOfContact}
+              editable={isEditable}
+              locked={isLocked}
+              onSave={(v) => onUpdateField("dayOfContact", v, "Day-of Contact")}
+              placeholder="Add contact..."
+            />
           </FieldRow>
         }
       </div>
 
       {/* Timeline */}
       {show("timeline", !!project.timeline) &&
-      <div className="bg-card rounded-lg border border-border p-4 space-y-2">
+        <div className="bg-card rounded-lg border border-border p-4 space-y-2">
           <FieldHeader label="Timeline" visible={v.timeline !== false} fieldKey="timeline" role={role} />
-          <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{project.timeline}</p>
+          <InlineEdit
+            value={project.timeline}
+            type="textarea"
+            editable={isEditable}
+            locked={isLocked}
+            onSave={(v) => onUpdateField("timeline", v, "Timeline")}
+            placeholder="Add timeline..."
+            displayClassName="text-sm text-muted-foreground leading-relaxed whitespace-pre-line"
+          />
         </div>
       }
 
       {/* Floral Items */}
       {show("floralItems", project.floralItems.length > 0) && project.floralItems.length > 0 &&
-      <div className="bg-card rounded-lg border border-border p-4 space-y-3">
+        <div className="bg-card rounded-lg border border-border p-4 space-y-3">
           <FieldHeader label="Floral Items" visible={v.floralItems !== false} fieldKey="floralItems" role={role} icon={<Flower2 className="w-4 h-4 text-primary" />} />
           <div className="space-y-2">
             {project.floralItems.map((item) =>
-          <div key={item.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
-                <span className="text-sm text-inherit">{item.name}</span>
-                <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">×{item.quantity}</span>
+              <div key={item.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
+                <InlineEdit
+                  value={item.name}
+                  editable={isEditable}
+                  locked={isLocked}
+                  onSave={(v) => {
+                    const updated = project.floralItems.map((fi) => fi.id === item.id ? { ...fi, name: v } : fi);
+                    onUpdateField("floralItems", updated, `Floral Item "${item.name}"`);
+                  }}
+                  displayClassName="text-sm"
+                />
+                <InlineEdit
+                  value={item.quantity}
+                  type="number"
+                  editable={isEditable}
+                  locked={isLocked}
+                  onSave={(v) => {
+                    const updated = project.floralItems.map((fi) => fi.id === item.id ? { ...fi, quantity: Number(v) } : fi);
+                    onUpdateField("floralItems", updated, `Floral Item qty`);
+                  }}
+                  renderDisplay={(v) => <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">×{v}</span>}
+                />
               </div>
-          )}
+            )}
           </div>
         </div>
       }
 
       {/* Description */}
       {show("description", !!project.description) &&
-      <div className="bg-card rounded-lg border border-border p-4 space-y-2">
+        <div className="bg-card rounded-lg border border-border p-4 space-y-2">
           <FieldHeader label="Description" visible={v.description !== false} fieldKey="description" role={role} />
-          <p className="text-sm text-muted-foreground leading-relaxed">{project.description}</p>
+          <InlineEdit
+            value={project.description}
+            type="textarea"
+            editable={isEditable}
+            locked={isLocked}
+            onSave={(v) => onUpdateField("description", v, "Description")}
+            placeholder="Add description..."
+            displayClassName="text-sm text-muted-foreground leading-relaxed"
+          />
         </div>
       }
 
       {/* Design Guide */}
       {show("designGuide", !!project.designGuide) &&
-      <div className="bg-card rounded-lg border border-border p-4 space-y-2">
+        <div className="bg-card rounded-lg border border-border p-4 space-y-2">
           <FieldHeader label="Design Guide" visible={v.designGuide !== false} fieldKey="designGuide" role={role} />
-          <a href={project.designGuide} target="_blank" rel="noopener noreferrer" className="text-sm text-primary underline break-all">
-            {project.designGuide}
-          </a>
+          <InlineEdit
+            value={project.designGuide}
+            type="url"
+            editable={isEditable}
+            locked={isLocked}
+            onSave={(v) => onUpdateField("designGuide", v, "Design Guide")}
+            placeholder="Add design guide link..."
+            renderDisplay={(v) =>
+              v ? (
+                <a href={String(v)} target="_blank" rel="noopener noreferrer" className="text-sm text-primary underline break-all" onClick={(e) => e.stopPropagation()}>
+                  {String(v)}
+                </a>
+              ) : (
+                <span className="text-sm text-muted-foreground">—</span>
+              )
+            }
+          />
         </div>
       }
 
       {/* Inspiration Photos */}
       {show("inspirationPhotos", project.inspirationPhotos.length > 0) && project.inspirationPhotos.length > 0 &&
-      <div className="space-y-2">
+        <div className="space-y-2">
           <FieldHeader label="Inspiration" visible={v.inspirationPhotos !== false} fieldKey="inspirationPhotos" role={role} />
           <div className="grid grid-cols-2 gap-2">
             {project.inspirationPhotos.map((url, i) =>
-          <div key={i} className="rounded-lg overflow-hidden aspect-square">
+              <div key={i} className="rounded-lg overflow-hidden aspect-square">
                 <img src={url} alt={`Inspiration ${i + 1}`} className="w-full h-full object-cover" />
               </div>
-          )}
+            )}
           </div>
         </div>
       }
 
-      {/* Freelancer Responses Panel (Admin on unassigned) */}
+      {/* Freelancer Responses Panel */}
       {role === "admin" && project.status === "unassigned" &&
-      <FreelancerResponsePanel project={project} onApprove={onApprove} />
+        <FreelancerResponsePanel project={project} onApprove={onApprove} />
       }
 
-      {/* Assigned Freelancers (Admin on assigned/completed) */}
+      {/* Assigned Freelancers */}
       {role === "admin" && project.status !== "unassigned" && assignedFreelancers.length > 0 &&
-      <div className="bg-card rounded-lg border border-border p-4 space-y-3">
+        <div className="bg-card rounded-lg border border-border p-4 space-y-3">
           <h3 className="text-sm font-semibold text-foreground">Assigned Designers</h3>
           <div className="space-y-2">
             {assignedFreelancers.map((f: any) =>
-          <div key={f.id} className="flex items-center gap-3">
+              <div key={f.id} className="flex items-center gap-3">
                 <img src={f.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
                 <div>
                   <div className="text-sm font-medium text-foreground">{f.name}</div>
                   <div className="text-xs text-primary font-medium">Assigned</div>
                 </div>
               </div>
-          )}
+            )}
           </div>
         </div>
       }
 
       {/* Freelancer action buttons */}
       {role === "freelancer" && project.status === "unassigned" &&
-      <div className="flex gap-3">
+        <div className="flex gap-3">
           <button className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium">
             I'm Interested
           </button>
@@ -316,48 +444,44 @@ const OverviewTab = ({ project, role, assignedFreelancers, onApprove }: {project
           </button>
         </div>
       }
-    </div>);
-
+    </div>
+  );
 };
 
 /** Inline visibility toggle for admin */
-const VisibilityToggle = ({ visible, fieldKey }: {visible: boolean;fieldKey: string;}) =>
-<button
-  type="button"
-  className={cn(
-    "ml-auto p-1 rounded transition-colors",
-    visible ? "text-primary hover:text-primary/80" : "text-muted-foreground/40 hover:text-muted-foreground"
-  )}
-  title={visible ? "Visible to freelancer" : "Hidden from freelancer"}>
-
+const VisibilityToggle = ({ visible, fieldKey }: { visible: boolean; fieldKey: string }) =>
+  <button
+    type="button"
+    className={cn(
+      "ml-auto p-1 rounded transition-colors",
+      visible ? "text-primary hover:text-primary/80" : "text-muted-foreground/40 hover:text-muted-foreground"
+    )}
+    title={visible ? "Visible to freelancer" : "Hidden from freelancer"}>
     {visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
   </button>;
 
-
-const FieldRow = ({ icon, children, visible, fieldKey, role }: {icon: React.ReactNode;children: React.ReactNode;visible: boolean;fieldKey: string;role: string;}) =>
-<div className="flex items-center gap-2 text-sm text-muted-foreground">
+const FieldRow = ({ icon, children, visible, fieldKey, role }: { icon: React.ReactNode; children: React.ReactNode; visible: boolean; fieldKey: string; role: string }) =>
+  <div className="flex items-center gap-2 text-sm text-muted-foreground">
     {icon}
     <span className="flex-1">{children}</span>
     {role === "admin" && <VisibilityToggle visible={visible} fieldKey={fieldKey} />}
   </div>;
 
-
-const FieldHeader = ({ label, visible, fieldKey, role, icon }: {label: string;visible: boolean;fieldKey: string;role: string;icon?: React.ReactNode;}) =>
-<div className="flex items-center gap-2">
+const FieldHeader = ({ label, visible, fieldKey, role, icon }: { label: string; visible: boolean; fieldKey: string; role: string; icon?: React.ReactNode }) =>
+  <div className="flex items-center gap-2">
     {icon}
     <h3 className="text-sm font-semibold text-foreground">{label}</h3>
     {role === "admin" && <VisibilityToggle visible={visible} fieldKey={fieldKey} />}
   </div>;
 
-
 type InventoryFilter = "all" | "approved" | "flagged";
-const getFilterOptions = (_role: string): {key: InventoryFilter;label: string;}[] => [
+const getFilterOptions = (_role: string): { key: InventoryFilter; label: string }[] => [
   { key: "all", label: "All" },
   { key: "approved", label: "Confirmed" },
   { key: "flagged", label: "Flagged" },
 ];
 
-const InventoryTab = ({ project, role }: {project: Project;role: string;}) => {
+const InventoryTab = ({ project, role, isEditable, isLocked }: { project: Project; role: string; isEditable: boolean; isLocked: boolean }) => {
   const [flowerFilter, setFlowerFilter] = useState<InventoryFilter>("all");
   const [hardGoodFilter, setHardGoodFilter] = useState<InventoryFilter>("all");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<"flowers" | "hardgoods" | null>(null);
@@ -385,7 +509,6 @@ const InventoryTab = ({ project, role }: {project: Project;role: string;}) => {
 
   return (
     <div className="space-y-4">
-
       {/* Flowers Section */}
       <div className="bg-card rounded-lg border border-border overflow-hidden">
         <div className="px-4 py-3 border-b border-border">
@@ -394,55 +517,47 @@ const InventoryTab = ({ project, role }: {project: Project;role: string;}) => {
               <Flower2 className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-semibold text-foreground">Flowers</h3>
               {flowerAllApproved ?
-              <span className="text-[10px] font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full">
-                  All Confirmed
-                </span> :
-              flowerFlagged > 0 ?
-              <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full">
-                  {flowerFlagged} flagged
-                </span> :
-              null}
+                <span className="text-[10px] font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full">All Confirmed</span> :
+                flowerFlagged > 0 ?
+                  <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full">{flowerFlagged} flagged</span> :
+                  null}
             </div>
-            {/* Admin CSV controls */}
-            {role === "admin" && hasFlowers &&
-            <div className="flex items-center gap-1">
+            {role === "admin" && hasFlowers && !isLocked &&
+              <div className="flex items-center gap-1">
                 <CsvUpload label="Replace" onParsed={() => {}} compact />
                 <button
-                onClick={() => setShowDeleteConfirm("flowers")}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
-                title="Delete CSV">
-
+                  onClick={() => setShowDeleteConfirm("flowers")}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
+                  title="Delete CSV">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             }
           </div>
-          {/* Filters */}
           {hasFlowers &&
-          <div className="flex gap-1 mt-2">
+            <div className="flex gap-1 mt-2">
               {filterOptions.map((f) =>
-            <button
-              key={f.key}
-              onClick={() => setFlowerFilter(f.key)}
-              className={cn(
-                "px-2.5 py-1 rounded-full text-[10px] font-medium transition-colors",
-                flowerFilter === f.key ?
-                "bg-primary text-primary-foreground" :
-                "text-muted-foreground hover:bg-muted"
-              )}>
+                <button
+                  key={f.key}
+                  onClick={() => setFlowerFilter(f.key)}
+                  className={cn(
+                    "px-2.5 py-1 rounded-full text-[10px] font-medium transition-colors",
+                    flowerFilter === f.key
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted"
+                  )}>
                   {f.label} ({flowerFilterCounts[f.key]})
                 </button>
-            )}
+              )}
             </div>
           }
         </div>
         <div className="p-3">
           {hasFlowers ?
-          <FlowerCardList rows={project.flowerInventory} role={role as "admin" | "freelancer"} filter={flowerFilter} /> :
-          role === "admin" ?
-          <CsvUpload label="Flowers" onParsed={() => {}} /> :
-
-          <p className="text-sm text-muted-foreground text-center py-4">No flower inventory uploaded yet</p>
+            <FlowerCardList rows={project.flowerInventory} role={role as "admin" | "freelancer"} filter={flowerFilter} /> :
+            role === "admin" && !isLocked ?
+              <CsvUpload label="Flowers" onParsed={() => {}} /> :
+              <p className="text-sm text-muted-foreground text-center py-4">No flower inventory uploaded yet</p>
           }
         </div>
       </div>
@@ -455,83 +570,66 @@ const InventoryTab = ({ project, role }: {project: Project;role: string;}) => {
               <Package className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-semibold text-foreground">Hard Goods</h3>
               {hardGoodAllApproved ?
-              <span className="text-[10px] font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full">
-                  All Confirmed
-                </span> :
-              hardGoodFlagged > 0 ?
-              <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full">
-                  {hardGoodFlagged} flagged
-                </span> :
-              null}
+                <span className="text-[10px] font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full">All Confirmed</span> :
+                hardGoodFlagged > 0 ?
+                  <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full">{hardGoodFlagged} flagged</span> :
+                  null}
             </div>
-            {role === "admin" && hasHardGoods &&
-            <div className="flex items-center gap-1">
+            {role === "admin" && hasHardGoods && !isLocked &&
+              <div className="flex items-center gap-1">
                 <CsvUpload label="Replace" onParsed={() => {}} compact />
                 <button
-                onClick={() => setShowDeleteConfirm("hardgoods")}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
-                title="Delete CSV">
-
+                  onClick={() => setShowDeleteConfirm("hardgoods")}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
+                  title="Delete CSV">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             }
           </div>
           {hasHardGoods &&
-          <div className="flex gap-1 mt-2">
+            <div className="flex gap-1 mt-2">
               {filterOptions.map((f) =>
-            <button
-              key={f.key}
-              onClick={() => setHardGoodFilter(f.key)}
-              className={cn(
-                "px-2.5 py-1 rounded-full text-[10px] font-medium transition-colors",
-                hardGoodFilter === f.key ?
-                "bg-primary text-primary-foreground" :
-                "text-muted-foreground hover:bg-muted"
-              )}>
+                <button
+                  key={f.key}
+                  onClick={() => setHardGoodFilter(f.key)}
+                  className={cn(
+                    "px-2.5 py-1 rounded-full text-[10px] font-medium transition-colors",
+                    hardGoodFilter === f.key
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted"
+                  )}>
                   {f.label} ({hardGoodFilterCounts[f.key]})
                 </button>
-            )}
+              )}
             </div>
           }
         </div>
         <div className="p-3">
           {hasHardGoods ?
-          <HardGoodCardList rows={project.hardGoodInventory} role={role as "admin" | "freelancer"} filter={hardGoodFilter} /> :
-          role === "admin" ?
-          <CsvUpload label="Hard Goods" onParsed={() => {}} /> :
-
-          <p className="text-sm text-muted-foreground text-center py-4">No hard goods inventory uploaded yet</p>
+            <HardGoodCardList rows={project.hardGoodInventory} role={role as "admin" | "freelancer"} filter={hardGoodFilter} /> :
+            role === "admin" && !isLocked ?
+              <CsvUpload label="Hard Goods" onParsed={() => {}} /> :
+              <p className="text-sm text-muted-foreground text-center py-4">No hard goods inventory uploaded yet</p>
           }
         </div>
       </div>
 
-
       {/* Delete confirmation */}
       {showDeleteConfirm &&
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(null)}>
           <div className="bg-card rounded-xl shadow-elevated w-[85vw] max-w-sm p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-sm font-semibold text-foreground">Delete {showDeleteConfirm === "flowers" ? "Flower" : "Hard Goods"} Inventory?</h3>
             <p className="text-xs text-muted-foreground">This will remove all rows and cannot be undone.</p>
             <div className="flex gap-2">
-              <button
-              onClick={() => setShowDeleteConfirm(null)}
-              className="flex-1 py-2.5 rounded-lg bg-muted text-muted-foreground text-sm font-medium">
-
-                Cancel
-              </button>
-              <button
-              onClick={() => setShowDeleteConfirm(null)}
-              className="flex-1 py-2.5 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium">
-
-                Delete
-              </button>
+              <button onClick={() => setShowDeleteConfirm(null)} className="flex-1 py-2.5 rounded-lg bg-muted text-muted-foreground text-sm font-medium">Cancel</button>
+              <button onClick={() => setShowDeleteConfirm(null)} className="flex-1 py-2.5 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium">Delete</button>
             </div>
           </div>
         </div>
       }
-    </div>);
-
+    </div>
+  );
 };
 
 const DESIGN_STATUS_CONFIG: Record<DesignStatus, { label: string; color: string; bgColor: string; icon: typeof CheckCircle2 }> = {
@@ -548,7 +646,7 @@ const DESIGN_FILTER_OPTIONS: { key: DesignFilter; label: string }[] = [
   { key: "approved", label: "Approved" },
 ];
 
-const DesignsTab = ({ project, role }: { project: Project; role: string }) => {
+const DesignsTab = ({ project, role, isEditable, isLocked }: { project: Project; role: string; isEditable: boolean; isLocked: boolean }) => {
   const items = project.floralItems;
   const [designs, setDesigns] = useState(project.floralItemDesigns);
   const [filter, setFilter] = useState<DesignFilter>("all");
@@ -565,6 +663,7 @@ const DesignsTab = ({ project, role }: { project: Project; role: string }) => {
   }
 
   const handleApproveDesign = (designId: string) => {
+    if (isLocked) return;
     setDesigns((prev) =>
       prev.map((d) =>
         d.id === designId
@@ -572,10 +671,12 @@ const DesignsTab = ({ project, role }: { project: Project; role: string }) => {
           : d
       )
     );
+    notifyFreelancersOfEdit(project, "Design approval");
     toast.success("Design approved!");
   };
 
   const handleRequestRevision = (designId: string, note: string) => {
+    if (isLocked) return;
     setDesigns((prev) =>
       prev.map((d) => {
         if (d.id !== designId) return d;
@@ -597,35 +698,32 @@ const DesignsTab = ({ project, role }: { project: Project; role: string }) => {
         };
       })
     );
+    notifyFreelancersOfEdit(project, "Design revision request");
     toast("Revision requested — freelancer will be notified.");
   };
 
-  // Compute counts
   const counts = {
     in_review: designs.filter((d) => d.designStatus === "in_review").length,
     needs_revision: designs.filter((d) => d.designStatus === "needs_revision").length,
     approved: designs.filter((d) => d.designStatus === "approved").length,
   };
 
-  // Filter items by their design status
   const filteredItems = items.filter((item) => {
     if (filter === "all") return true;
     const design = designs.find((d) => d.floralItemId === item.id);
-    if (!design) return filter === "in_review"; // no design yet = show under "in_review" as pending
+    if (!design) return filter === "in_review";
     return design.designStatus === filter;
   });
 
   const filterCounts: Record<DesignFilter, number> = {
     all: items.length,
-    in_review: counts.in_review + (items.length - designs.length), // items without designs count as in_review
+    in_review: counts.in_review + (items.length - designs.length),
     needs_revision: counts.needs_revision,
     approved: counts.approved,
   };
 
   return (
     <div className="space-y-4">
-
-      {/* Filters */}
       {items.length > 0 && (
         <div className="flex gap-1">
           {DESIGN_FILTER_OPTIONS.map((f) => (
@@ -637,8 +735,7 @@ const DesignsTab = ({ project, role }: { project: Project; role: string }) => {
                 filter === f.key
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-muted"
-              )}
-            >
+              )}>
               {f.label} ({filterCounts[f.key]})
             </button>
           ))}
@@ -653,6 +750,8 @@ const DesignsTab = ({ project, role }: { project: Project; role: string }) => {
             item={item}
             design={design}
             role={role}
+            isEditable={isEditable}
+            isLocked={isLocked}
             onApprove={handleApproveDesign}
             onRequestRevision={handleRequestRevision}
           />
@@ -670,12 +769,16 @@ const FloralItemDesignCard = ({
   item,
   design,
   role,
+  isEditable,
+  isLocked,
   onApprove,
   onRequestRevision,
 }: {
   item: FloralItem;
   design?: FloralItemDesign;
   role: string;
+  isEditable: boolean;
+  isLocked: boolean;
   onApprove: (id: string) => void;
   onRequestRevision: (id: string, note: string) => void;
 }) => {
@@ -729,25 +832,12 @@ const FloralItemDesignCard = ({
                   rows={2}
                 />
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => setIsEditingNote(false)}
-                    className="flex-1 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={() => { setNoteValue(design?.freelancerNote || ""); setIsEditingNote(false); }}
-                    className="py-1.5 px-3 rounded-lg bg-muted text-muted-foreground text-xs font-medium"
-                  >
-                    Cancel
-                  </button>
+                  <button onClick={() => setIsEditingNote(false)} className="flex-1 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium">Save</button>
+                  <button onClick={() => { setNoteValue(design?.freelancerNote || ""); setIsEditingNote(false); }} className="py-1.5 px-3 rounded-lg bg-muted text-muted-foreground text-xs font-medium">Cancel</button>
                 </div>
               </div>
             ) : (
-              <button
-                onClick={() => setIsEditingNote(true)}
-                className="w-full text-left text-sm text-muted-foreground italic hover:text-foreground transition-colors"
-              >
+              <button onClick={() => setIsEditingNote(true)} className="w-full text-left text-sm text-muted-foreground italic hover:text-foreground transition-colors">
                 {noteValue ? `"${noteValue}"` : "+ Add a note..."}
               </button>
             )
@@ -757,7 +847,7 @@ const FloralItemDesignCard = ({
             )
           )}
 
-          {/* Needs Revision — Admin note prominently shown */}
+          {/* Needs Revision — Admin note */}
           {status === "needs_revision" && design.adminNote && (
             <div className="bg-warning/5 border border-warning/20 rounded-lg p-3">
               <p className="text-xs font-medium text-warning mb-1">Revision Requested</p>
@@ -773,26 +863,24 @@ const FloralItemDesignCard = ({
             </button>
           )}
 
-          {/* Admin Actions */}
-          {role === "admin" && status === "in_review" && !showRevisionInput && (
+          {/* Admin Actions — locked when completed */}
+          {role === "admin" && status === "in_review" && !showRevisionInput && !isLocked && (
             <div className="flex gap-2 pt-1">
               <button
                 onClick={() => onApprove(design.id)}
-                className="flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center justify-center gap-1.5"
-              >
+                className="flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center justify-center gap-1.5">
                 <Check className="w-3.5 h-3.5" /> Approve
               </button>
               <button
                 onClick={() => setShowRevisionInput(true)}
-                className="flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-muted text-muted-foreground hover:bg-warning/10 hover:text-warning transition-colors"
-              >
+                className="flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-muted text-muted-foreground hover:bg-warning/10 hover:text-warning transition-colors">
                 Request Revision
               </button>
             </div>
           )}
 
           {/* Admin: Revision note input */}
-          {role === "admin" && showRevisionInput && (
+          {role === "admin" && showRevisionInput && !isLocked && (
             <div className="space-y-2 bg-muted/50 rounded-lg p-3">
               <p className="text-xs font-medium text-foreground">Revision Note</p>
               <textarea
@@ -813,14 +901,12 @@ const FloralItemDesignCard = ({
                     }
                   }}
                   disabled={!revisionNote.trim()}
-                  className="flex-1 py-1.5 rounded-lg bg-warning text-foreground text-xs font-medium disabled:opacity-50"
-                >
+                  className="flex-1 py-1.5 rounded-lg bg-warning text-foreground text-xs font-medium disabled:opacity-50">
                   Send Revision Request
                 </button>
                 <button
                   onClick={() => { setRevisionNote(""); setShowRevisionInput(false); }}
-                  className="py-1.5 px-3 rounded-lg bg-muted text-muted-foreground text-xs font-medium"
-                >
+                  className="py-1.5 px-3 rounded-lg bg-muted text-muted-foreground text-xs font-medium">
                   Cancel
                 </button>
               </div>
@@ -832,8 +918,7 @@ const FloralItemDesignCard = ({
             <div>
               <button
                 onClick={() => setShowHistory(!showHistory)}
-                className="text-[10px] text-muted-foreground hover:text-foreground transition-colors font-medium"
-              >
+                className="text-[10px] text-muted-foreground hover:text-foreground transition-colors font-medium">
                 {showHistory ? "Hide" : "Show"} revision history ({design.revisionHistory.length})
               </button>
               {showHistory && (
@@ -856,7 +941,7 @@ const FloralItemDesignCard = ({
             </div>
           )}
 
-          {/* Freelancer: upload more (max 3) */}
+          {/* Freelancer: upload more */}
           {role === "freelancer" && status !== "needs_revision" && design.photos.length < 3 && (
             <button className="w-full py-2 rounded-lg border border-dashed border-border text-xs font-medium text-muted-foreground hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-1.5">
               <Camera className="w-3.5 h-3.5" />
@@ -865,7 +950,6 @@ const FloralItemDesignCard = ({
           )}
         </div>
       ) : (
-        /* No photos uploaded yet */
         <div className="p-4">
           {role === "freelancer" ? (
             <button className="w-full py-6 rounded-lg border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors flex flex-col items-center gap-2">
