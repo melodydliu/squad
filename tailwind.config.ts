@@ -63,6 +63,10 @@ export default {
           DEFAULT: "hsl(var(--warm))",
           dark: "hsl(var(--warm-dark))",
         },
+        peach: {
+          DEFAULT: "hsl(var(--peach))",
+          light: "hsl(var(--peach-light))",
+        },
         success: "hsl(var(--success))",
         warning: "hsl(var(--warning))",
         info: "hsl(var(--info))",

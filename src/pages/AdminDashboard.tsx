@@ -68,20 +68,20 @@ const AdminDashboard = () => {
         </Button>
       }
     >
-      <div className="space-y-6">
+      <div className="space-y-7">
 
         {/* Filters */}
-        <div className="flex gap-2 overflow-x-auto pt-2 pb-1 scrollbar-hide">
+        <div className="flex gap-2.5 overflow-x-auto pt-2 pb-1 scrollbar-hide">
           {statusFilters.map((f) => {
             const hasReviewDot = f.value === "assigned" && assignedNeedsReview > 0;
             return (
               <button
                 key={f.value}
                 onClick={() => setFilter(f.value)}
-                className={`relative px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-colors ${
+                className={`relative px-4 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
                   filter === f.value
-                    ? "bg-foreground text-background"
-                    : "bg-card text-muted-foreground hover:text-foreground"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-card text-muted-foreground hover:text-foreground hover:bg-secondary"
                 }`}
               >
                 {f.label} ({filterCounts[f.value]})
