@@ -27,9 +27,17 @@ const FreelancerDashboard = () => {
       .find((p) => p.id === projectId)
       ?.freelancerResponses.find((r) => r.freelancerId === userId);
 
-  // OPEN: All unassigned projects (includes ones where user marked unavailable)
+  // OPEN: Unassigned projects where freelancer has NOT marked "available" (those go to Pending)
   const openProjects = projects
-    .filter((p) => p.status === "unassigned")
+    .filter((p) => {
+      if (p.status !== "unassigned") return false;
+      // Exclude projects where this freelancer already expressed interest (those are in Pending)
+      if (userId) {
+        const response = p.freelancerResponses.find((r) => r.freelancerId === userId);
+        if (response?.status === "available") return false;
+      }
+      return true;
+    })
     .sort((a, b) => new Date(a.dateStart).getTime() - new Date(b.dateStart).getTime());
 
   // PENDING: Unassigned projects where freelancer marked "available" but not yet assigned
@@ -155,16 +163,7 @@ const FreelancerDashboard = () => {
                     transition={{ delay: i * 0.05 }}
                     className={cn(isUnavailable && "opacity-50 grayscale-[30%]")}
                   >
-                    <div className="relative">
                       <ProjectCard project={project} role="freelancer" profiles={profiles} />
-                      {isUnavailable && (
-                        <div className="absolute top-3 right-3 flex items-center gap-2">
-                          <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                            Marked Unavailable
-                          </span>
-                        </div>
-                      )}
-                    </div>
                     {canReactivate && (
                       <button
                         onClick={(e) => {
@@ -188,14 +187,7 @@ const FreelancerDashboard = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
                 >
-                  <div className="relative">
                     <ProjectCard project={project} role="freelancer" profiles={profiles} />
-                    <div className="absolute top-3 right-3">
-                      <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full">
-                        Pending Approval
-                      </span>
-                    </div>
-                  </div>
                 </motion.div>
               ))}
 
