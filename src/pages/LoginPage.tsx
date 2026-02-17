@@ -44,11 +44,6 @@ const LoginPage = () => {
     }
   };
 
-  // Demo login helpers (kept for development)
-  const handleDemoLogin = (role: "admin" | "freelancer") => {
-    navigate(role === "admin" ? "/admin" : "/freelancer");
-  };
-
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6">
       <motion.div
@@ -113,31 +108,6 @@ const LoginPage = () => {
             Create Account
           </Link>
         </p>
-
-        {/* Demo mode separator */}
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border" />
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="bg-background px-3 text-muted-foreground">Demo mode</span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => handleDemoLogin("admin")}
-            className="py-2.5 px-3 rounded-lg bg-secondary text-secondary-foreground font-medium text-xs hover:opacity-90 transition-opacity"
-          >
-            Admin Demo
-          </button>
-          <button
-            onClick={() => handleDemoLogin("freelancer")}
-            className="py-2.5 px-3 rounded-lg bg-secondary text-secondary-foreground font-medium text-xs hover:opacity-90 transition-opacity"
-          >
-            Freelancer Demo
-          </button>
-        </div>
       </motion.div>
     </div>
   );

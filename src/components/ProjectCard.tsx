@@ -1,27 +1,36 @@
-import { Project, mockFreelancers, getAttentionFlags, getAssignedSubCategory, getDesignersAssigned, getDesignersRemaining, isPartiallyFilled, getCompletionProgress } from "@/data/mockData";
+import { Project, getAttentionFlags, getAssignedSubCategory, getDesignersAssigned, getDesignersRemaining, isPartiallyFilled, getCompletionProgress } from "@/data/mockData";
+import { FreelancerProfile } from "@/hooks/useProjects";
 import StatusBadge from "./StatusBadge";
 import { Calendar, MapPin, DollarSign, Users, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface ProjectCardProps {
   project: Project;
   role: "admin" | "freelancer";
+  profiles?: Map<string, FreelancerProfile>;
 }
 
-const ProjectCard = ({ project, role }: ProjectCardProps) => {
+const ProjectCard = ({ project, role, profiles }: ProjectCardProps) => {
   const navigate = useNavigate();
-  const assignedFreelancers = project.assignedFreelancerIds
-    .map((fId) => mockFreelancers.find((f) => f.id === fId))
+  const { role: authRole } = useAuth();
+  const effectiveRole = role || authRole || "freelancer";
+
+  const assignedNames = project.assignedFreelancerIds
+    .map((id) => {
+      const p = profiles?.get(id);
+      return p ? `${p.firstName} ${p.lastName}`.trim() : null;
+    })
     .filter(Boolean);
+
   const assigned = getDesignersAssigned(project);
   const remaining = getDesignersRemaining(project);
-  const partiallyFilled = isPartiallyFilled(project);
 
-  const attention = role === "admin" ? getAttentionFlags(project) : { needsReview: false, reasons: [] };
-  const completion = role === "admin" && project.status === "assigned" ? getCompletionProgress(project) : null;
+  const attention = effectiveRole === "admin" ? getAttentionFlags(project) : { needsReview: false, reasons: [] };
+  const completion = effectiveRole === "admin" && project.status === "assigned" ? getCompletionProgress(project) : null;
 
   return (
     <motion.div
@@ -29,7 +38,7 @@ const ProjectCard = ({ project, role }: ProjectCardProps) => {
       animate={{ opacity: 1, y: 0 }}
       whileTap={{ scale: 0.98 }}
       onClick={() => {
-        const params = new URLSearchParams({ role });
+        const params = new URLSearchParams({ role: effectiveRole });
         if (attention.needsReview && attention.reviewTab) {
           params.set("tab", attention.reviewTab);
         }
@@ -37,9 +46,7 @@ const ProjectCard = ({ project, role }: ProjectCardProps) => {
       }}
       className={cn(
         "bg-card rounded-2xl transition-all duration-200 cursor-pointer overflow-hidden",
-        attention.needsReview
-          ? "ring-1 ring-warning/40"
-          : ""
+        attention.needsReview ? "ring-1 ring-warning/40" : ""
       )}
     >
       {project.inspirationPhotos.length > 0 && (
@@ -68,10 +75,12 @@ const ProjectCard = ({ project, role }: ProjectCardProps) => {
               {`, ${new Date(project.dateStart).getFullYear()}`}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <MapPin className="w-3.5 h-3.5" />
-            <span className="truncate">{project.location}</span>
-          </div>
+          {project.location && (
+            <div className="flex items-center gap-2">
+              <MapPin className="w-3.5 h-3.5" />
+              <span className="truncate">{project.location}</span>
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <DollarSign className="w-3.5 h-3.5" />
             <span className="font-medium text-foreground">${project.pay}</span>
@@ -91,8 +100,8 @@ const ProjectCard = ({ project, role }: ProjectCardProps) => {
           </div>
         )}
 
-        {/* Staffing info for unassigned / partially filled */}
-        {role === "admin" && project.status === "unassigned" && (
+        {/* Staffing info for unassigned */}
+        {effectiveRole === "admin" && project.status === "unassigned" && (
           <div className="flex items-center justify-between gap-2 pt-1 border-t border-border">
             <div className="flex items-center gap-2">
               <Users className="w-3.5 h-3.5 text-muted-foreground" />
@@ -108,19 +117,19 @@ const ProjectCard = ({ project, role }: ProjectCardProps) => {
           </div>
         )}
 
-        {/* Admin: freelancer info for assigned (only if no attention flag showing) */}
-        {role === "admin" && project.status !== "unassigned" && !attention.needsReview && (
+        {/* Admin: freelancer info for assigned */}
+        {effectiveRole === "admin" && project.status !== "unassigned" && !attention.needsReview && (
           <div className="flex items-center gap-2 pt-1 border-t border-border">
             <Users className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">
-              {assignedFreelancers.length > 0
-                ? `Assigned: ${assignedFreelancers.map(f => f!.name).join(", ")}`
+              {assignedNames.length > 0
+                ? `Assigned: ${assignedNames.join(", ")}`
                 : `${project.interestedFreelancerIds.length} interested`}
             </span>
           </div>
         )}
 
-        {/* Completion progress for assigned projects */}
+        {/* Completion progress */}
         {completion && !completion.isComplete && (completion.designsTotal > 0 || completion.inventoryTotal > 0) && (
           <div className="space-y-1.5 pt-1 border-t border-border">
             {completion.designsTotal > 0 && (

@@ -1,24 +1,32 @@
 import { useState } from "react";
 import AppLayout from "@/components/AppLayout";
 import ProjectCard from "@/components/ProjectCard";
-import { mockProjects, ProjectStatus } from "@/data/mockData";
+import { useProjects } from "@/hooks/useProjects";
+import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
-
-const FREELANCER_ID = "f1"; // Simulated logged-in freelancer
+import { Skeleton } from "@/components/ui/skeleton";
 
 const FreelancerDashboard = () => {
   const [tab, setTab] = useState<"available" | "my">("available");
+  const { user } = useAuth();
+  const { projects, profiles, loading } = useProjects();
 
-  const availableProjects = mockProjects
+  const userId = user?.id;
+
+  const availableProjects = projects
     .filter((p) => p.status === "unassigned")
     .sort((a, b) => new Date(a.dateStart).getTime() - new Date(b.dateStart).getTime());
-  const myProjects = mockProjects
-    .filter(
-      (p) => p.assignedFreelancerIds.includes(FREELANCER_ID) || p.interestedFreelancerIds.includes(FREELANCER_ID)
+
+  const myProjects = projects
+    .filter((p) =>
+      userId && (
+        p.assignedFreelancerIds.includes(userId) ||
+        p.interestedFreelancerIds.includes(userId)
+      )
     )
     .sort((a, b) => new Date(a.dateStart).getTime() - new Date(b.dateStart).getTime());
 
-  const projects = tab === "available" ? availableProjects : myProjects;
+  const displayProjects = tab === "available" ? availableProjects : myProjects;
 
   return (
     <AppLayout role="freelancer" title="Projects">
@@ -43,24 +51,33 @@ const FreelancerDashboard = () => {
           ))}
         </div>
 
+        {/* Loading */}
+        {loading && (
+          <div className="space-y-4">
+            {[1, 2].map((i) => <Skeleton key={i} className="h-40 w-full rounded-2xl" />)}
+          </div>
+        )}
+
         {/* Projects */}
-        <div className="space-y-3">
-          {projects.map((project, i) => (
-            <motion.div
-              key={project.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-            >
-              <ProjectCard project={project} role="freelancer" />
-            </motion.div>
-          ))}
-          {projects.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground text-sm">
-              {tab === "available" ? "No open projects right now" : "You haven't joined any projects yet"}
-            </div>
-          )}
-        </div>
+        {!loading && (
+          <div className="space-y-3">
+            {displayProjects.map((project, i) => (
+              <motion.div
+                key={project.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+              >
+                <ProjectCard project={project} role="freelancer" profiles={profiles} />
+              </motion.div>
+            ))}
+            {displayProjects.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground text-sm">
+                {tab === "available" ? "No open projects right now" : "You haven't joined any projects yet"}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </AppLayout>
   );

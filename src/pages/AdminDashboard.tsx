@@ -3,9 +3,12 @@ import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import ProjectCard from "@/components/ProjectCard";
 import { Button } from "@/components/ui/button";
-import { mockProjects, ProjectStatus, getAssignedSubCategory, getAttentionFlags } from "@/data/mockData";
+import { ProjectStatus, getAssignedSubCategory, getAttentionFlags } from "@/data/mockData";
+import { useProjects } from "@/hooks/useProjects";
+import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
 import { Plus } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type FilterValue = "all" | ProjectStatus;
 
@@ -19,12 +22,12 @@ const statusFilters: { label: string; value: FilterValue }[] = [
 const AdminDashboard = () => {
   const [filter, setFilter] = useState<FilterValue>("all");
   const navigate = useNavigate();
+  const { projects, profiles, loading } = useProjects();
 
   const filtered = filter === "all"
-    ? mockProjects
-    : mockProjects.filter((p) => p.status === filter);
+    ? projects
+    : projects.filter((p) => p.status === filter);
 
-  // For assigned filter, group into upcoming & in_progress
   const assignedUpcoming = filtered.filter(
     (p) => p.status === "assigned" && getAssignedSubCategory(p) === "upcoming"
   );
@@ -35,25 +38,25 @@ const AdminDashboard = () => {
   const nonAssigned = filtered.filter((p) => p.status !== "assigned");
 
   const filterCounts: Record<FilterValue, number> = {
-    all: mockProjects.length,
-    unassigned: mockProjects.filter((p) => p.status === "unassigned").length,
-    assigned: mockProjects.filter((p) => p.status === "assigned").length,
-    completed: mockProjects.filter((p) => p.status === "completed").length,
+    all: projects.length,
+    unassigned: projects.filter((p) => p.status === "unassigned").length,
+    assigned: projects.filter((p) => p.status === "assigned").length,
+    completed: projects.filter((p) => p.status === "completed").length,
   };
 
-  const assignedNeedsReview = mockProjects.filter(
+  const assignedNeedsReview = projects.filter(
     (p) => p.status === "assigned" && getAttentionFlags(p).needsReview
   ).length;
 
-  const renderProjectList = (projects: typeof mockProjects, startIndex = 0) =>
-    projects.map((project, i) => (
+  const renderProjectList = (projectList: typeof projects, startIndex = 0) =>
+    projectList.map((project, i) => (
       <motion.div
         key={project.id}
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: (startIndex + i) * 0.05 }}
       >
-        <ProjectCard project={project} role="admin" />
+        <ProjectCard project={project} role="admin" profiles={profiles} />
       </motion.div>
     ));
 
@@ -69,7 +72,6 @@ const AdminDashboard = () => {
       }
     >
       <div className="space-y-6">
-
         {/* Filters */}
         <div className="flex gap-2 overflow-x-auto pt-2 pb-1 scrollbar-hide">
           {statusFilters.map((f) => {
@@ -93,52 +95,59 @@ const AdminDashboard = () => {
           })}
         </div>
 
+        {/* Loading */}
+        {loading && (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-48 w-full rounded-2xl" />)}
+          </div>
+        )}
+
         {/* Project List */}
-        <div className="space-y-6">
-          {/* When showing assigned groups */}
-          {showAssignedGroups && assignedInProgress.length > 0 && (
-            <div className="space-y-3">
-              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">In Progress</h2>
-              {renderProjectList(assignedInProgress)}
-            </div>
-          )}
+        {!loading && (
+          <div className="space-y-6">
+            {showAssignedGroups && assignedInProgress.length > 0 && (
+              <div className="space-y-3">
+                <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">In Progress</h2>
+                {renderProjectList(assignedInProgress)}
+              </div>
+            )}
 
-          {showAssignedGroups && assignedUpcoming.length > 0 && (
-            <div className="space-y-3">
-              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Upcoming</h2>
-              {renderProjectList(assignedUpcoming, assignedInProgress.length)}
-            </div>
-          )}
+            {showAssignedGroups && assignedUpcoming.length > 0 && (
+              <div className="space-y-3">
+                <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Upcoming</h2>
+                {renderProjectList(assignedUpcoming, assignedInProgress.length)}
+              </div>
+            )}
 
-          {/* Non-assigned projects (when filter is "all" or specific non-assigned filter) */}
-          {filter !== "assigned" && nonAssigned.length > 0 && (
-            <div className="space-y-3">
-              {filter === "all" && (nonAssigned.some(p => p.status === "unassigned") || nonAssigned.some(p => p.status === "completed")) && (
-                <>
-                  {nonAssigned.filter(p => p.status === "unassigned").length > 0 && (
-                    <div className="space-y-3">
-                      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Unassigned</h2>
-                      {renderProjectList(nonAssigned.filter(p => p.status === "unassigned"), assignedInProgress.length + assignedUpcoming.length)}
-                    </div>
-                  )}
-                  {nonAssigned.filter(p => p.status === "completed").length > 0 && (
-                    <div className="space-y-3">
-                      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Completed</h2>
-                      {renderProjectList(nonAssigned.filter(p => p.status === "completed"), assignedInProgress.length + assignedUpcoming.length + nonAssigned.filter(p => p.status === "unassigned").length)}
-                    </div>
-                  )}
-                </>
-              )}
-              {filter !== "all" && renderProjectList(nonAssigned)}
-            </div>
-          )}
+            {filter !== "assigned" && nonAssigned.length > 0 && (
+              <div className="space-y-3">
+                {filter === "all" && (
+                  <>
+                    {nonAssigned.filter(p => p.status === "unassigned").length > 0 && (
+                      <div className="space-y-3">
+                        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Unassigned</h2>
+                        {renderProjectList(nonAssigned.filter(p => p.status === "unassigned"), assignedInProgress.length + assignedUpcoming.length)}
+                      </div>
+                    )}
+                    {nonAssigned.filter(p => p.status === "completed").length > 0 && (
+                      <div className="space-y-3">
+                        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Completed</h2>
+                        {renderProjectList(nonAssigned.filter(p => p.status === "completed"), assignedInProgress.length + assignedUpcoming.length + nonAssigned.filter(p => p.status === "unassigned").length)}
+                      </div>
+                    )}
+                  </>
+                )}
+                {filter !== "all" && renderProjectList(nonAssigned)}
+              </div>
+            )}
 
-          {filtered.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground text-sm">
-              No projects match this filter
-            </div>
-          )}
-        </div>
+            {filtered.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground text-sm">
+                {projects.length === 0 ? "No projects yet — create your first one!" : "No projects match this filter"}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </AppLayout>
   );
