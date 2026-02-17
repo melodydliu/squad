@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import AppLayout from "@/components/AppLayout";
 import { useUserProfile, getInitials, UserProfile } from "@/hooks/useUserProfile";
 import { Camera, X, Globe, Instagram } from "lucide-react";
+import MobilePhotoUpload from "@/components/MobilePhotoUpload";
 import { toast } from "sonner";
 
 type Errors = Partial<Record<keyof UserProfile, string>>;
@@ -54,9 +55,7 @@ const ProfilePage = () => {
     setDirty(false);
   };
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handlePhotoFile = (file: File) => {
     const reader = new FileReader();
     reader.onload = () => {
       update("profilePhotoUrl", reader.result as string);
@@ -87,10 +86,9 @@ const ProfilePage = () => {
                 </span>
               </div>
             )}
-            <label className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-card border border-border flex items-center justify-center cursor-pointer shadow-card-hover hover:bg-secondary transition-colors">
+            <MobilePhotoUpload onPhoto={handlePhotoFile} className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-card border border-border flex items-center justify-center shadow-card-hover hover:bg-secondary transition-colors">
               <Camera className="w-4 h-4 text-muted-foreground" />
-              <input type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
-            </label>
+            </MobilePhotoUpload>
           </div>
           {form.profilePhotoUrl && (
             <button onClick={removePhoto} className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors">

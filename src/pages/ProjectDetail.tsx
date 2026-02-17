@@ -13,6 +13,7 @@ import HardGoodCardList from "@/components/inventory/HardGoodCard";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import MobilePhotoUpload from "@/components/MobilePhotoUpload";
 
 /** Notify assigned freelancers (mock) when admin edits a field */
 const notifyFreelancersOfEdit = (project: Project, fieldName: string, message?: string) => {
@@ -998,10 +999,12 @@ const FloralItemDesignCard = ({
 
           {/* Freelancer: re-upload when revision requested */}
           {role === "freelancer" && status === "needs_revision" && (
-            <button className="w-full py-2.5 rounded-lg bg-warning/10 border border-warning/20 text-warning text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-warning/15 transition-colors">
-              <RefreshCw className="w-3.5 h-3.5" />
-              Upload Revised Design
-            </button>
+            <MobilePhotoUpload onPhoto={() => {}}>
+              <div className="w-full py-2.5 rounded-lg bg-warning/10 border border-warning/20 text-warning text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-warning/15 transition-colors">
+                <RefreshCw className="w-3.5 h-3.5" />
+                Upload Revised Design
+              </div>
+            </MobilePhotoUpload>
           )}
 
           {/* Admin Actions — locked when completed */}
@@ -1084,20 +1087,24 @@ const FloralItemDesignCard = ({
 
           {/* Freelancer: upload more */}
           {role === "freelancer" && status !== "needs_revision" && design.photos.length < 3 && (
-            <button className="w-full py-2 rounded-lg border border-dashed border-border text-xs font-medium text-muted-foreground hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-1.5">
-              <Camera className="w-3.5 h-3.5" />
-              Add Photo ({3 - design.photos.length} remaining)
-            </button>
+            <MobilePhotoUpload onPhoto={() => {}}>
+              <div className="w-full py-2 rounded-lg border border-dashed border-border text-xs font-medium text-muted-foreground hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-1.5">
+                <Camera className="w-3.5 h-3.5" />
+                Add Photo ({3 - design.photos.length} remaining)
+              </div>
+            </MobilePhotoUpload>
           )}
         </div>
       ) : (
         <div className="p-4">
           {role === "freelancer" ? (
-            <button className="w-full py-6 rounded-lg border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors flex flex-col items-center gap-2">
-              <Camera className="w-5 h-5" />
-              <span className="text-xs font-medium">Upload Design Photos</span>
-              <span className="text-[10px] text-muted-foreground">Up to 3 photos</span>
-            </button>
+            <MobilePhotoUpload onPhoto={() => {}} multiple>
+              <div className="w-full py-6 rounded-lg border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors flex flex-col items-center gap-2">
+                <Camera className="w-5 h-5" />
+                <span className="text-xs font-medium">Upload Design Photos</span>
+                <span className="text-[10px] text-muted-foreground">Up to 3 photos</span>
+              </div>
+            </MobilePhotoUpload>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-2">No designs uploaded yet</p>
           )}
