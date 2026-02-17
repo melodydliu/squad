@@ -372,31 +372,6 @@ const InventoryTab = ({ project, role }: {project: Project;role: string;}) => {
 
   return (
     <div className="space-y-4">
-      {/* Summary */}
-      {(hasFlowers || hasHardGoods) &&
-      <div className="bg-card rounded-lg border border-border p-4">
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div>
-              <div className="text-lg font-bold text-foreground font-display">
-                {project.flowerInventory.length + project.hardGoodInventory.length}
-              </div>
-              <div className="text-[10px] text-muted-foreground font-medium">Total</div>
-            </div>
-            <div>
-              <div className="text-lg font-bold text-success font-display">
-                {project.flowerInventory.filter((r) => r.status === "approved").length + project.hardGoodInventory.filter((r) => r.status === "approved").length}
-              </div>
-              <div className="text-[10px] text-muted-foreground font-medium">Approved</div>
-            </div>
-            <div>
-              <div className="text-lg font-bold text-warning font-display">
-                {flowerFlagged + hardGoodFlagged}
-              </div>
-              <div className="text-[10px] text-muted-foreground font-medium">Flagged</div>
-            </div>
-          </div>
-        </div>
-      }
 
       {/* Flowers Section */}
       <div className="bg-card rounded-lg border border-border overflow-hidden">
@@ -631,25 +606,6 @@ const DesignsTab = ({ project, role }: { project: Project; role: string }) => {
 
   return (
     <div className="space-y-4">
-      {/* Summary bar */}
-      {designs.length > 0 && (
-        <div className="bg-card rounded-lg border border-border p-4">
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div>
-              <div className="text-lg font-bold text-info font-display">{counts.in_review}</div>
-              <div className="text-[10px] text-muted-foreground font-medium">In Review</div>
-            </div>
-            <div>
-              <div className="text-lg font-bold text-warning font-display">{counts.needs_revision}</div>
-              <div className="text-[10px] text-muted-foreground font-medium">Revision</div>
-            </div>
-            <div>
-              <div className="text-lg font-bold text-success font-display">{counts.approved}</div>
-              <div className="text-[10px] text-muted-foreground font-medium">Approved</div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Filters */}
       {role === "admin" && designs.length > 0 && (
