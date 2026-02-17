@@ -14,12 +14,12 @@ function validate(form: UserProfile): Errors {
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))
     errors.email = "Enter a valid email";
   if (!form.phone.trim()) errors.phone = "Phone is required";
-  if (!form.address.trim()) errors.address = "Address is required";
+  // Address is optional at signup, not required for profile save
   return errors;
 }
 
 const ProfilePage = () => {
-  const { profile, saveProfile } = useUserProfile();
+  const { profile, saveProfile, loading } = useUserProfile();
   const [form, setForm] = useState<UserProfile>(profile);
   const [errors, setErrors] = useState<Errors>({});
   const [dirty, setDirty] = useState(false);
@@ -35,13 +35,17 @@ const ProfilePage = () => {
     if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const errs = validate(form);
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
-    saveProfile(form);
-    setDirty(false);
-    toast.success("Profile saved!");
+    const error = await saveProfile(form);
+    if (error) {
+      toast.error("Failed to save profile");
+    } else {
+      setDirty(false);
+      toast.success("Profile saved!");
+    }
   };
 
   const handleCancel = () => {
