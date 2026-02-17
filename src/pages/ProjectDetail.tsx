@@ -351,16 +351,17 @@ const FieldHeader = ({ label, visible, fieldKey, role, icon }: {label: string;vi
 
 
 type InventoryFilter = "all" | "approved" | "flagged";
-const FILTER_OPTIONS: {key: InventoryFilter;label: string;}[] = [
-{ key: "all", label: "All" },
-{ key: "approved", label: "Approved" },
-{ key: "flagged", label: "Flagged" }];
-
+const getFilterOptions = (role: string): {key: InventoryFilter;label: string;}[] => [
+  { key: "all", label: "All" },
+  { key: "approved", label: role === "freelancer" ? "Confirmed" : "Approved" },
+  { key: "flagged", label: "Flagged" },
+];
 
 const InventoryTab = ({ project, role }: {project: Project;role: string;}) => {
   const [flowerFilter, setFlowerFilter] = useState<InventoryFilter>("all");
   const [hardGoodFilter, setHardGoodFilter] = useState<InventoryFilter>("all");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<"flowers" | "hardgoods" | null>(null);
+  const filterOptions = getFilterOptions(role);
 
   const hasFlowers = project.flowerInventory.length > 0;
   const hasHardGoods = project.hardGoodInventory.length > 0;
@@ -394,7 +395,7 @@ const InventoryTab = ({ project, role }: {project: Project;role: string;}) => {
               <h3 className="text-sm font-semibold text-foreground">Flowers</h3>
               {flowerAllApproved ?
               <span className="text-[10px] font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full">
-                  All Approved
+                  {role === "freelancer" ? "All Confirmed" : "All Approved"}
                 </span> :
               flowerFlagged > 0 ?
               <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full">
@@ -419,7 +420,7 @@ const InventoryTab = ({ project, role }: {project: Project;role: string;}) => {
           {/* Filters */}
           {hasFlowers &&
           <div className="flex gap-1 mt-2">
-              {FILTER_OPTIONS.map((f) =>
+              {filterOptions.map((f) =>
             <button
               key={f.key}
               onClick={() => setFlowerFilter(f.key)}
@@ -455,7 +456,7 @@ const InventoryTab = ({ project, role }: {project: Project;role: string;}) => {
               <h3 className="text-sm font-semibold text-foreground">Hard Goods</h3>
               {hardGoodAllApproved ?
               <span className="text-[10px] font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full">
-                  All Approved
+                  {role === "freelancer" ? "All Confirmed" : "All Approved"}
                 </span> :
               hardGoodFlagged > 0 ?
               <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full">
@@ -478,7 +479,7 @@ const InventoryTab = ({ project, role }: {project: Project;role: string;}) => {
           </div>
           {hasHardGoods &&
           <div className="flex gap-1 mt-2">
-              {FILTER_OPTIONS.map((f) =>
+              {filterOptions.map((f) =>
             <button
               key={f.key}
               onClick={() => setHardGoodFilter(f.key)}
