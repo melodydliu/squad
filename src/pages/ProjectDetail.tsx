@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import MobilePhotoUpload from "@/components/MobilePhotoUpload";
 import { useProjects, FreelancerProfile } from "@/hooks/useProjects";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 /** Notify assigned freelancers when admin edits a field */
 const notifyFreelancersOfEdit = (project: Project, fieldName: string, message?: string) => {
@@ -592,15 +593,97 @@ const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable
 
       {/* Freelancer action buttons */}
       {role === "freelancer" && project.status === "unassigned" &&
-        <div className="flex gap-3">
-          <button className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium">
-            I'm Interested
-          </button>
-          <button className="flex-1 py-3 rounded-lg bg-muted text-muted-foreground text-sm font-medium">
-            Unavailable
-          </button>
-        </div>
+        <FreelancerAvailabilityButtons projectId={project.id} />
       }
+    </div>
+  );
+};
+
+/** Freelancer availability buttons — reads/writes to freelancer_responses */
+const FreelancerAvailabilityButtons = ({ projectId }: { projectId: string }) => {
+  const { user } = useAuth();
+  const [status, setStatus] = useState<"available" | "unavailable" | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchResponse = async () => {
+      const { data } = await supabase
+        .from("freelancer_responses")
+        .select("status")
+        .eq("project_id", projectId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (data) setStatus(data.status as "available" | "unavailable");
+      setLoaded(true);
+    };
+    fetchResponse();
+  }, [user, projectId]);
+
+  const handleSelect = async (newStatus: "available" | "unavailable") => {
+    if (!user || saving) return;
+    const targetStatus = status === newStatus ? null : newStatus;
+    setSaving(true);
+    try {
+      if (targetStatus === null) {
+        await supabase
+          .from("freelancer_responses")
+          .delete()
+          .eq("project_id", projectId)
+          .eq("user_id", user.id);
+      } else if (status === null) {
+        await supabase
+          .from("freelancer_responses")
+          .insert({ project_id: projectId, user_id: user.id, status: targetStatus });
+      } else {
+        await supabase
+          .from("freelancer_responses")
+          .update({ status: targetStatus })
+          .eq("project_id", projectId)
+          .eq("user_id", user.id);
+      }
+      setStatus(targetStatus);
+      if (targetStatus) {
+        toast.success(targetStatus === "available" ? "Marked as interested!" : "Marked as unavailable");
+      } else {
+        toast.success("Selection cleared");
+      }
+    } catch {
+      toast.error("Failed to update — please try again");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!loaded) return null;
+
+  return (
+    <div className="flex gap-3">
+      <button
+        onClick={() => handleSelect("available")}
+        disabled={saving}
+        className={cn(
+          "flex-1 py-3 rounded-lg text-sm font-medium transition-all disabled:opacity-50",
+          status === "available"
+            ? "bg-primary text-primary-foreground ring-2 ring-primary/30"
+            : "bg-muted text-muted-foreground hover:bg-muted/80"
+        )}
+      >
+        I'm Interested
+      </button>
+      <button
+        onClick={() => handleSelect("unavailable")}
+        disabled={saving}
+        className={cn(
+          "flex-1 py-3 rounded-lg text-sm font-medium transition-all disabled:opacity-50",
+          status === "unavailable"
+            ? "bg-destructive/10 text-destructive ring-2 ring-destructive/30"
+            : "bg-muted text-muted-foreground hover:bg-muted/80"
+        )}
+      >
+        Unavailable
+      </button>
     </div>
   );
 };
