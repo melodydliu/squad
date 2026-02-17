@@ -108,6 +108,23 @@ const ProjectDetail = () => {
           </div>
         </div>
 
+        {/* Tabs */}
+        <div className="flex bg-muted rounded-lg p-1">
+          {tabs.map((tab) =>
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={cn(
+              "flex-1 py-2 text-xs font-medium rounded-md transition-all",
+              activeTab === tab.key ?
+              "bg-card text-foreground shadow-sm" :
+              "text-muted-foreground"
+            )}>
+              {tab.label}
+            </button>
+          )}
+        </div>
+
         {/* Completion progress bar (admin, assigned, not yet complete) */}
         {role === "admin" && project.status === "assigned" && !completion.isComplete && (completion.designsTotal > 0 || completion.inventoryTotal > 0) && (
           <div className="bg-card rounded-lg border border-border p-3 space-y-2">
@@ -128,24 +145,6 @@ const ProjectDetail = () => {
             )}
           </div>
         )}
-
-        {/* Tabs */}
-        <div className="flex bg-muted rounded-lg p-1">
-          {tabs.map((tab) =>
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={cn(
-              "flex-1 py-2 text-xs font-medium rounded-md transition-all",
-              activeTab === tab.key ?
-              "bg-card text-foreground shadow-sm" :
-              "text-muted-foreground"
-            )}>
-
-              {tab.label}
-            </button>
-          )}
-        </div>
 
         {/* Tab Content */}
         <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
