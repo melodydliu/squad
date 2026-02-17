@@ -1,6 +1,6 @@
 import { Project, getAttentionFlags, getAssignedSubCategory, getDesignersAssigned, getDesignersRemaining, isPartiallyFilled, getCompletionProgress } from "@/data/mockData";
 import { FreelancerProfile } from "@/hooks/useProjects";
-import StatusBadge from "./StatusBadge";
+import StatusBadge, { FreelancerCardStatus } from "./StatusBadge";
 import { Calendar, MapPin, DollarSign, Users, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
@@ -16,7 +16,7 @@ interface ProjectCardProps {
 
 const ProjectCard = ({ project, role, profiles }: ProjectCardProps) => {
   const navigate = useNavigate();
-  const { role: authRole } = useAuth();
+  const { role: authRole, user } = useAuth();
   const effectiveRole = role || authRole || "freelancer";
 
   const assignedNames = project.assignedFreelancerIds
@@ -31,6 +31,22 @@ const ProjectCard = ({ project, role, profiles }: ProjectCardProps) => {
 
   const attention = effectiveRole === "admin" ? getAttentionFlags(project) : { needsReview: false, reasons: [] };
   const completion = effectiveRole === "admin" && project.status === "assigned" ? getCompletionProgress(project) : null;
+
+  // Compute freelancer-specific status for badge
+  let freelancerStatus: FreelancerCardStatus = null;
+  if (effectiveRole === "freelancer" && user) {
+    const userId = user.id;
+    if (project.assignedFreelancerIds.includes(userId)) {
+      freelancerStatus = "assigned";
+    } else {
+      const response = project.freelancerResponses.find((r) => r.freelancerId === userId);
+      if (response?.status === "available") {
+        freelancerStatus = "pending_approval";
+      } else if (response?.status === "unavailable") {
+        freelancerStatus = "unavailable";
+      }
+    }
+  }
 
   return (
     <motion.div
@@ -63,7 +79,7 @@ const ProjectCard = ({ project, role, profiles }: ProjectCardProps) => {
           <h3 className="font-display text-base font-bold text-foreground leading-tight">
             {project.eventName}
           </h3>
-          <StatusBadge status={project.status} project={project} />
+          <StatusBadge status={project.status} project={project} freelancerStatus={effectiveRole === "freelancer" ? freelancerStatus : undefined} />
         </div>
 
         <div className="space-y-1.5 text-sm text-muted-foreground">
