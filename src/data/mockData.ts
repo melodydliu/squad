@@ -180,6 +180,40 @@ export function getAssignedSubCategory(project: Project): AssignedSubCategory | 
   return "upcoming";
 }
 
+/** Project completion progress */
+export interface CompletionProgress {
+  designsApproved: number;
+  designsTotal: number;
+  inventoryApproved: number;
+  inventoryTotal: number;
+  isComplete: boolean;
+}
+
+export function getCompletionProgress(project: Project): CompletionProgress {
+  // Design progress: each floral item needs at least one photo with approved status
+  const designsTotal = project.floralItems.length;
+  const designsApproved = project.floralItems.filter((item) => {
+    const design = project.floralItemDesigns.find((d) => d.floralItemId === item.id);
+    return design && design.photos.length > 0 && design.designStatus === "approved";
+  }).length;
+
+  // Inventory progress: all flower + hard good items must be approved
+  const allInventory = [
+    ...project.flowerInventory.map((r) => r.status),
+    ...project.hardGoodInventory.map((r) => r.status),
+  ];
+  const inventoryTotal = allInventory.length;
+  const inventoryApproved = allInventory.filter((s) => s === "approved").length;
+
+  const isComplete =
+    designsTotal > 0 &&
+    designsApproved === designsTotal &&
+    inventoryTotal > 0 &&
+    inventoryApproved === inventoryTotal;
+
+  return { designsApproved, designsTotal, inventoryApproved, inventoryTotal, isComplete };
+}
+
 /** Check if a project needs admin attention */
 export interface AttentionFlag {
   needsReview: boolean;

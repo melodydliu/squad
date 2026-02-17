@@ -3,8 +3,9 @@ import { useParams, useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import StatusBadge from "@/components/StatusBadge";
 import FreelancerResponsePanel from "@/components/FreelancerResponsePanel";
-import { mockProjects, mockFreelancers, mockNotifications, Project, FloralItem, FloralItemDesign, FlowerInventoryRow, HardGoodInventoryRow, getAttentionFlags, getDesignersRemaining, SERVICE_LEVEL_OPTIONS, Notification, DesignStatus } from "@/data/mockData";
+import { mockProjects, mockFreelancers, mockNotifications, Project, FloralItem, FloralItemDesign, FlowerInventoryRow, HardGoodInventoryRow, getAttentionFlags, getDesignersRemaining, SERVICE_LEVEL_OPTIONS, Notification, DesignStatus, getCompletionProgress } from "@/data/mockData";
 import { Calendar, MapPin, DollarSign, Truck, Check, X, Camera, AlertCircle, CheckCircle2, Image, Clock, Car, Flower2, FileText, Phone, Eye, EyeOff, Briefcase, Package, Upload, RefreshCw, Trash2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import CsvUpload from "@/components/inventory/CsvUpload";
 import FlowerCardList from "@/components/inventory/FlowerCard";
 import HardGoodCardList from "@/components/inventory/HardGoodCard";
@@ -85,17 +86,48 @@ const ProjectDetail = () => {
   { key: "designs" as const, label: "Designs" }];
 
 
+  const completion = getCompletionProgress(project);
+
   return (
     <AppLayout role={role} title={project.eventName} showBack>
       <div className="space-y-4">
         {/* Status + Pay header */}
         <div className="flex items-center justify-between">
-          <StatusBadge status={project.status} project={project} />
+          <div className="flex items-center gap-2">
+            <StatusBadge status={project.status} project={project} />
+            {role === "admin" && completion.isComplete && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-success/10 text-success">
+                <CheckCircle2 className="w-3 h-3" />
+                Complete
+              </span>
+            )}
+          </div>
           <div className="text-right">
             <span className="text-lg font-bold font-display text-foreground">${project.pay}</span>
             <span className="text-xs text-muted-foreground ml-1.5">· {project.totalHours}h</span>
           </div>
         </div>
+
+        {/* Completion progress bar (admin, assigned, not yet complete) */}
+        {role === "admin" && project.status === "assigned" && !completion.isComplete && (completion.designsTotal > 0 || completion.inventoryTotal > 0) && (
+          <div className="bg-card rounded-lg border border-border p-3 space-y-2">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Approval Progress</h4>
+            {completion.designsTotal > 0 && (
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground w-16 shrink-0">Designs</span>
+                <Progress value={(completion.designsApproved / completion.designsTotal) * 100} className="h-2 flex-1" />
+                <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">{completion.designsApproved} / {completion.designsTotal}</span>
+              </div>
+            )}
+            {completion.inventoryTotal > 0 && (
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground w-16 shrink-0">Inventory</span>
+                <Progress value={(completion.inventoryApproved / completion.inventoryTotal) * 100} className="h-2 flex-1" />
+                <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">{completion.inventoryApproved} / {completion.inventoryTotal}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex bg-muted rounded-lg p-1">
