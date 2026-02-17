@@ -65,9 +65,6 @@ const LoginPage = () => {
           <h1 className="font-display text-3xl font-bold text-foreground">
             Bloom Studio
           </h1>
-          <p className="text-muted-foreground text-sm">
-            Floral design coordination, simplified
-          </p>
         </div>
 
         {/* Form */}
