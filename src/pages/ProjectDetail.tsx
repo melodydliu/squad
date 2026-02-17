@@ -615,11 +615,18 @@ const DesignsTab = ({ project, role }: { project: Project; role: string }) => {
     return design.designStatus === filter;
   });
 
+  const filterCounts: Record<DesignFilter, number> = {
+    all: items.length,
+    in_review: counts.in_review + (items.length - designs.length), // items without designs count as in_review
+    needs_revision: counts.needs_revision,
+    approved: counts.approved,
+  };
+
   return (
     <div className="space-y-4">
 
       {/* Filters */}
-      {role === "admin" && designs.length > 0 && (
+      {items.length > 0 && (
         <div className="flex gap-1">
           {DESIGN_FILTER_OPTIONS.map((f) => (
             <button
@@ -632,7 +639,7 @@ const DesignsTab = ({ project, role }: { project: Project; role: string }) => {
                   : "text-muted-foreground hover:bg-muted"
               )}
             >
-              {f.label}
+              {f.label} ({filterCounts[f.key]})
             </button>
           ))}
         </div>
