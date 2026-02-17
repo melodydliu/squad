@@ -1,5 +1,6 @@
 import { Flower2, MapPin, Calendar, DollarSign, Clock, User, Camera, Package, CheckCircle2, AlertCircle, Eye } from "lucide-react";
 
+
 export type ProjectStatus = "unassigned" | "assigned" | "completed";
 export type TransportMethod = "personal_vehicle" | "uhaul_rental";
 export type QualityStatus = "good" | "issue";

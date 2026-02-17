@@ -45,6 +45,21 @@ const StatusBadge = ({ status, project, className, freelancerStatus }: StatusBad
 
   const config = STATUS_CONFIG[status];
 
+  // For unassigned projects that have freelancer interest → "Pending"
+  if (status === "unassigned" && project && project.interestedFreelancerIds.length > 0 && !isPartiallyFilled(project)) {
+    return (
+      <span
+        className={cn(
+          "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium",
+          "bg-info/10 text-info",
+          className
+        )}
+      >
+        Pending
+      </span>
+    );
+  }
+
   // For unassigned projects that are partially filled
   if (status === "unassigned" && project && isPartiallyFilled(project)) {
     return (
