@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import StatusBadge from "@/components/StatusBadge";
+import StatusBadge, { FreelancerCardStatus } from "@/components/StatusBadge";
 import FreelancerResponsePanel from "@/components/FreelancerResponsePanel";
 import InlineEdit from "@/components/InlineEdit";
 import { mockProjects, mockFreelancers, mockNotifications, Project, FloralItem, FloralItemDesign, FlowerInventoryRow, HardGoodInventoryRow, getAttentionFlags, getDesignersRemaining, SERVICE_LEVEL_OPTIONS, Notification, DesignStatus, getCompletionProgress } from "@/data/mockData";
@@ -32,7 +32,7 @@ const notifyFreelancersOfEdit = (project: Project, fieldName: string, message?: 
 const ProjectDetail = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
-  const { role: authRole } = useAuth();
+  const { role: authRole, user } = useAuth();
   const roleParam = searchParams.get("role") as "admin" | "freelancer" | null;
   const role = roleParam || authRole || "admin";
   const { projects, profiles, loading: projectsLoading } = useProjects();
@@ -148,13 +148,26 @@ const ProjectDetail = () => {
 
   const completion = getCompletionProgress(project);
 
+  // Compute freelancer-specific status for the detail page badge
+  let freelancerStatus: FreelancerCardStatus = null;
+  if (role === "freelancer" && user) {
+    if (project.assignedFreelancerIds.includes(user.id)) {
+      freelancerStatus = "assigned";
+    } else {
+      const myResponse = project.freelancerResponses.find((r) => r.freelancerId === user.id);
+      if (myResponse?.status === "available") {
+        freelancerStatus = "pending_approval";
+      }
+    }
+  }
+
   return (
     <AppLayout role={role} title={project.eventName} showBack>
       <div className="space-y-4">
         {/* Status + Pay header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <StatusBadge status={project.status} project={project} />
+            <StatusBadge status={project.status} project={project} freelancerStatus={role === "freelancer" ? freelancerStatus : undefined} />
             {role === "admin" && completion.isComplete && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-success/10 text-success">
                 <CheckCircle2 className="w-3 h-3" />
