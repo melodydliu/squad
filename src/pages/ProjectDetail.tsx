@@ -85,10 +85,8 @@ const ProjectDetail = () => {
     if (!wasVisible) {
       // Hidden → Visible: notify freelancers (info newly released)
       notifyFreelancersOfEdit(project, fieldKey, "Project details updated");
-      toast.success("Section now visible to freelancers");
     } else {
       // Visible → Hidden: NO notification
-      toast("Section hidden from freelancers — no notification sent", { duration: 2000 });
     }
   };
 
