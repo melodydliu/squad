@@ -205,7 +205,7 @@ const StatusButton = ({
   role?: "admin" | "freelancer";
 }) => {
   const isApproved = variant === "approved";
-  const label = isApproved ? (role === "freelancer" ? "Confirmed" : "Approved") : "Flagged";
+  const label = isApproved ? "Confirmed" : "Flagged";
   return (
     <button
       onClick={onClick}
