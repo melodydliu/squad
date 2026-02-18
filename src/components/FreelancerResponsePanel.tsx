@@ -1,7 +1,10 @@
+"use client";
+
 import { useState } from "react";
 import { Project } from "@/data/mockData";
 import { FreelancerProfile } from "@/hooks/useProjects";
 import { Check, ExternalLink, Mail, Phone, User, Users } from "lucide-react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -49,7 +52,7 @@ const FreelancerResponsePanel = ({ project, profiles, onApprove }: FreelancerRes
                 return (
                   <motion.div key={resp.freelancerId} layout initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0, overflow: "hidden" }} className={cn("flex items-center gap-3 p-3 rounded-lg border transition-colors", isAssigned ? "bg-success/5 border-success/20" : "bg-card border-border")}>
                     {profile?.avatarUrl ? (
-                      <img src={profile.avatarUrl} alt={name} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                      <Image src={profile.avatarUrl} alt={name} width={40} height={40} className="rounded-full object-cover shrink-0" />
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
                         <User className="w-5 h-5 text-muted-foreground" />

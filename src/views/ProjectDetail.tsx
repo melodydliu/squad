@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "next/navigation";
+import NextImage from "next/image";
 import AppLayout from "@/components/AppLayout";
 import StatusBadge, { FreelancerCardStatus } from "@/components/StatusBadge";
 import FreelancerResponsePanel from "@/components/FreelancerResponsePanel";
 import InlineEdit from "@/components/InlineEdit";
 import { mockProjects, mockFreelancers, mockNotifications, Project, FloralItem, FloralItemDesign, FlowerInventoryRow, HardGoodInventoryRow, getAttentionFlags, getDesignersRemaining, SERVICE_LEVEL_OPTIONS, Notification, DesignStatus, getCompletionProgress } from "@/data/mockData";
-import { Calendar, MapPin, DollarSign, Truck, Check, X, Camera, AlertCircle, CheckCircle2, Image, Clock, Car, Flower2, FileText, Phone, Eye, EyeOff, Briefcase, Package, Upload, RefreshCw, Trash2, Lock, Plus } from "lucide-react";
+import { Calendar, MapPin, DollarSign, Truck, Check, X, Camera, AlertCircle, CheckCircle2, Clock, Car, Flower2, FileText, Phone, Eye, EyeOff, Briefcase, Package, Upload, RefreshCw, Trash2, Lock, Plus } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import CsvUpload from "@/components/inventory/CsvUpload";
 import FlowerCardList from "@/components/inventory/FlowerCard";
@@ -650,8 +651,8 @@ const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable
           <FieldHeader label="Inspiration" visible={v.inspirationPhotos !== false} fieldKey="inspirationPhotos" role={role} onToggle={onToggleVisibility} isLocked={isLocked} />
           <div className="grid grid-cols-2 gap-2">
             {project.inspirationPhotos.map((url, i) =>
-              <div key={i} className="rounded-lg overflow-hidden aspect-square">
-                <img src={url} alt={`Inspiration ${i + 1}`} className="w-full h-full object-cover" />
+              <div key={i} className="rounded-lg overflow-hidden aspect-square relative">
+                <NextImage src={url} alt={`Inspiration ${i + 1}`} fill className="object-cover" />
               </div>
             )}
           </div>
@@ -670,7 +671,7 @@ const OverviewTab = ({ project, role, assignedFreelancers, onApprove, isEditable
           <div className="space-y-2">
             {assignedFreelancers.map((f: any) =>
               <div key={f.id} className="flex items-center gap-3">
-                <img src={f.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+                <NextImage src={f.avatarUrl} alt="" width={40} height={40} className="rounded-full object-cover" />
                 <div>
                   <div className="text-sm font-medium text-foreground">{f.name}</div>
                   <div className="text-xs text-primary font-medium">Assigned</div>
@@ -1330,8 +1331,8 @@ const FloralItemDesignCard = ({
         <div className="p-3 space-y-3">
           <div className={`grid gap-2 ${design.photos.length === 1 ? "grid-cols-1" : design.photos.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
             {design.photos.map((photo) => (
-              <div key={photo.id} className="rounded-lg overflow-hidden aspect-square">
-                <img src={photo.photoUrl} alt={item.name} className="w-full h-full object-cover" />
+              <div key={photo.id} className="rounded-lg overflow-hidden aspect-square relative">
+                <NextImage src={photo.photoUrl} alt={item.name} fill className="object-cover" />
               </div>
             ))}
           </div>

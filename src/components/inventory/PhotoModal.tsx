@@ -1,4 +1,7 @@
+"use client";
+
 import { X, Camera, Trash2 } from "lucide-react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import MobilePhotoUpload from "@/components/MobilePhotoUpload";
 
@@ -30,7 +33,7 @@ const PhotoModal = ({ open, onClose, photoUrl, onUpload, onRemove, readOnly }: P
         <div className="p-4 space-y-3">
           {photoUrl ? (
             <div className="rounded-lg overflow-hidden">
-              <img src={photoUrl} alt="Inventory item" className="w-full h-auto max-h-[50vh] object-contain bg-muted" />
+              <Image src={photoUrl} alt="Inventory item" width={0} height={0} sizes="90vw" className="w-full h-auto max-h-[50vh] object-contain bg-muted" />
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
