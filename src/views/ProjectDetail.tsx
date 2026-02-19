@@ -7,8 +7,8 @@ import AppLayout from "@/components/AppLayout";
 import StatusBadge, { FreelancerCardStatus } from "@/components/StatusBadge";
 import FreelancerResponsePanel from "@/components/FreelancerResponsePanel";
 import InlineEdit from "@/components/InlineEdit";
-import { mockProjects, mockFreelancers, mockNotifications, Project, FloralItem, FloralItemDesign, FlowerInventoryRow, HardGoodInventoryRow, getAttentionFlags, getDesignersRemaining, SERVICE_LEVEL_OPTIONS, Notification, DesignStatus, getCompletionProgress } from "@/data/mockData";
-import { Calendar, MapPin, DollarSign, Truck, Check, X, Camera, AlertCircle, CheckCircle2, Clock, Car, Flower2, FileText, Phone, Eye, EyeOff, Briefcase, Package, Upload, RefreshCw, Trash2, Lock, Plus } from "lucide-react";
+import { Project, FloralItem, FloralItemDesign, FlowerInventoryRow, HardGoodInventoryRow, getAttentionFlags, getDesignersRemaining, SERVICE_LEVEL_OPTIONS, Notification, DesignStatus, getCompletionProgress } from "@/data/mockData";
+import { Calendar, MapPin, DollarSign, Truck, Check, X, Camera, AlertCircle, CheckCircle2, Clock, Car, Flower2, FileText, Phone, Eye, EyeOff, Briefcase, Package, Upload, RefreshCw, Trash2, Lock, Plus, Globe } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import CsvUpload from "@/components/inventory/CsvUpload";
 import FlowerCardList from "@/components/inventory/FlowerCard";
@@ -22,9 +22,17 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 /** Notify assigned freelancers when admin edits a field */
-const notifyFreelancersOfEdit = (project: Project, fieldName: string, message?: string) => {
+const notifyFreelancersOfEdit = (
+  project: Project,
+  fieldName: string,
+  profiles: Map<string, { firstName: string; lastName: string }>,
+  message?: string
+) => {
   const assignedNames = project.assignedFreelancerIds
-    .map((id) => mockFreelancers.find((f) => f.id === id)?.name)
+    .map((id) => {
+      const p = profiles.get(id);
+      return p ? `${p.firstName} ${p.lastName}` : undefined;
+    })
     .filter(Boolean);
   if (assignedNames.length === 0) return;
   toast.info(`Notified ${assignedNames.join(", ")}: ${message || `"${fieldName}" was updated`}`, {
@@ -88,7 +96,7 @@ const ProjectDetail = () => {
       const updated = { ...prev, [field]: value };
       // Notify only if the field is visible to freelancers (or will be)
       if (isVisible) {
-        notifyFreelancersOfEdit(prev, label, "Project details updated");
+        notifyFreelancersOfEdit(prev, label, profiles, "Project details updated");
       }
       return updated;
     });
@@ -103,13 +111,22 @@ const ProjectDetail = () => {
 
     if (!wasVisible) {
       // Hidden → Visible: notify freelancers (info newly released)
-      notifyFreelancersOfEdit(project, fieldKey, "Project details updated");
+      notifyFreelancersOfEdit(project, fieldKey, profiles, "Project details updated");
     } else {
       // Visible → Hidden: NO notification
     }
   };
 
-  
+  const toggleProjectVisibility = async () => {
+    if (!project || isLocked) return;
+    const newVis: "public" | "private" = project.visibility === "public" ? "private" : "public";
+    setProject((prev) => prev ? { ...prev, visibility: newVis } : prev);
+    await (supabase as any)
+      .from("projects")
+      .update({ visibility: newVis })
+      .eq("id", project.id);
+    toast.success(`Project is now ${newVis}`);
+  };
 
   const handleApproveFreelancer = async (freelancerId: string) => {
     const profile = profiles.get(freelancerId);
@@ -242,13 +259,32 @@ const ProjectDetail = () => {
       <div className="space-y-4">
         {/* Status + Pay header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <StatusBadge status={project.status} project={project} freelancerStatus={role === "freelancer" ? freelancerStatus : undefined} />
             {role === "admin" && completion.isComplete && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-success/10 text-success">
                 <CheckCircle2 className="w-3 h-3" />
                 Complete
               </span>
+            )}
+            {role === "admin" && (
+              <button
+                onClick={toggleProjectVisibility}
+                disabled={isLocked}
+                className={cn(
+                  "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-colors",
+                  project.visibility === "public"
+                    ? "bg-info/10 text-info hover:bg-info/20"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80",
+                  isLocked && "opacity-50 cursor-default"
+                )}
+                title={project.visibility === "public" ? "Click to make private" : "Click to make public"}
+              >
+                {project.visibility === "public"
+                  ? <><Globe className="w-3 h-3" /> Public</>
+                  : <><Lock className="w-3 h-3" /> Private</>
+                }
+              </button>
             )}
           </div>
           <div className="text-right">
@@ -325,7 +361,7 @@ const ProjectDetail = () => {
             <InventoryTab project={project} role={role} isEditable={isEditable} isLocked={isLocked} profiles={profiles} />
           }
           {activeTab === "designs" &&
-            <DesignsTab project={project} role={role} isEditable={isEditable} isLocked={isLocked} designs={floralDesigns} onUpdateDesigns={setFloralDesigns} />
+            <DesignsTab project={project} role={role} isEditable={isEditable} isLocked={isLocked} designs={floralDesigns} onUpdateDesigns={setFloralDesigns} profiles={profiles} />
           }
         </motion.div>
       </div>
@@ -1121,6 +1157,8 @@ const InventoryTab = ({ project, role, isEditable, isLocked, profiles }: { proje
                   prev.map((row) => row.id === rowId ? { ...row, ...updates } : row)
                 );
               }}
+              projectId={project.id}
+              profiles={profiles}
             /> :
             role === "admin" && !isLocked ?
               <CsvUpload label="Hard Goods" onParsed={handleHardGoodCsvUpload} /> :
@@ -1164,7 +1202,7 @@ const DESIGN_FILTER_OPTIONS: { key: DesignFilter; label: string }[] = [
   { key: "approved", label: "Approved" },
 ];
 
-const DesignsTab = ({ project, role, isEditable, isLocked, designs, onUpdateDesigns }: { project: Project; role: string; isEditable: boolean; isLocked: boolean; designs: FloralItemDesign[]; onUpdateDesigns: React.Dispatch<React.SetStateAction<FloralItemDesign[]>> }) => {
+const DesignsTab = ({ project, role, isEditable, isLocked, designs, onUpdateDesigns, profiles }: { project: Project; role: string; isEditable: boolean; isLocked: boolean; designs: FloralItemDesign[]; onUpdateDesigns: React.Dispatch<React.SetStateAction<FloralItemDesign[]>>; profiles: Map<string, FreelancerProfile> }) => {
   const items = project.floralItems;
   const [filter, setFilter] = useState<DesignFilter>("all");
 
@@ -1188,7 +1226,7 @@ const DesignsTab = ({ project, role, isEditable, isLocked, designs, onUpdateDesi
           : d
       )
     );
-    notifyFreelancersOfEdit(project, "Design approval");
+    notifyFreelancersOfEdit(project, "Design approval", profiles);
     toast.success("Design approved!");
   };
 
@@ -1215,7 +1253,7 @@ const DesignsTab = ({ project, role, isEditable, isLocked, designs, onUpdateDesi
         };
       })
     );
-    notifyFreelancersOfEdit(project, "Design revision request");
+    notifyFreelancersOfEdit(project, "Design revision request", profiles);
     toast("Revision requested — freelancer will be notified.");
   };
 

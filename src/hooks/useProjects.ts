@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type {
@@ -29,6 +31,8 @@ interface DbProject {
   quality_status: string | null;
   quality_note: string | null;
   field_visibility: Record<string, boolean>;
+  studio_id: string | null;
+  visibility: string;
   created_at: string;
   updated_at: string;
 }
@@ -91,6 +95,8 @@ function mapDbToProject(
     })),
     fieldVisibility: db.field_visibility as FieldVisibility,
     createdAt: db.created_at,
+    studioId: db.studio_id ?? null,
+    visibility: (db.visibility ?? "private") as "public" | "private",
   };
 }
 

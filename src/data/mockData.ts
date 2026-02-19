@@ -46,6 +46,8 @@ export interface Project {
   freelancerResponses: FreelancerResponse[];
   fieldVisibility: FieldVisibility;
   createdAt: string;
+  studioId: string | null;
+  visibility: "public" | "private";
 }
 
 export type InventoryItemStatus = "approved" | "flagged";
@@ -371,6 +373,8 @@ export const mockProjects: Project[] = [
       { freelancerId: "f3", status: "unavailable", note: "Booked that weekend", timestamp: "2026-02-15T11:00:00" },
     ],
     createdAt: "2026-02-14",
+    studioId: null,
+    visibility: "private" as const,
   },
   {
     id: "p2",
@@ -427,6 +431,8 @@ export const mockProjects: Project[] = [
       { freelancerId: "f2", status: "available", timestamp: "2026-02-09T08:00:00" },
     ],
     createdAt: "2026-02-10",
+    studioId: null,
+    visibility: "private" as const,
   },
   {
     id: "p3",
@@ -472,6 +478,8 @@ export const mockProjects: Project[] = [
       { freelancerId: "f1", status: "available", timestamp: "2026-02-07T14:00:00" },
     ],
     createdAt: "2026-02-08",
+    studioId: null,
+    visibility: "private" as const,
   },
   {
     id: "p4",
@@ -514,6 +522,8 @@ export const mockProjects: Project[] = [
       { freelancerId: "f1", status: "available", timestamp: "2026-01-19T10:00:00" },
     ],
     createdAt: "2026-01-20",
+    studioId: null,
+    visibility: "private" as const,
   },
 ];
 
