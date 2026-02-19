@@ -18,10 +18,10 @@ const fontBody = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Bloom Connect",
-  description: "Mobile-first project management for Bloom Studio",
+  title: "Squad",
+  description: "Freelance crew management for creative studios",
   openGraph: {
-    title: "Bloom Connect",
+    title: "Squad",
     type: "website",
   },
 };

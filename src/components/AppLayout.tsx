@@ -1,5 +1,7 @@
+"use client";
+
 import { ReactNode } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useRouter, usePathname } from "next/navigation";
 import { Flower2, LayoutDashboard, Bell, User, LogOut, ChevronLeft, Settings, Phone } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -22,15 +24,15 @@ const ADMIN_CONTACT = {
 };
 
 const AppLayout = ({ children, title, showBack, role: roleProp, headerAction }: AppLayoutProps) => {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
+  const pathname = usePathname();
   const { role: authRole, signOut } = useAuth();
   const { unreadCount } = useNotifications();
   const role = roleProp || authRole;
 
   const handleLogout = async () => {
     await signOut();
-    navigate("/");
+    router.push("/");
   };
 
   const adminTabs = [
@@ -54,14 +56,14 @@ const AppLayout = ({ children, title, showBack, role: roleProp, headerAction }: 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {showBack ? (
-              <button onClick={() => navigate(-1)} className="p-1 -ml-1 text-muted-foreground hover:text-foreground transition-colors">
+              <button onClick={() => router.back()} className="p-1 -ml-1 text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronLeft className="w-5 h-5" />
               </button>
             ) : (
               <Flower2 className="w-6 h-6 text-primary" />
             )}
             <h1 className="font-display text-xl font-bold text-foreground">
-              {title || "Bloom Studio"}
+              {title || "Squad"}
             </h1>
             {role === "admin" && (
               <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-primary/15 text-primary rounded-full">
@@ -89,7 +91,7 @@ const AppLayout = ({ children, title, showBack, role: roleProp, headerAction }: 
               </Popover>
             )}
             <button
-              onClick={() => navigate(`/${role}/settings`)}
+              onClick={() => router.push(`/${role}/settings`)}
               className="p-2 text-muted-foreground hover:text-foreground transition-colors"
             >
               <Settings className="w-4 h-4" />
@@ -113,11 +115,11 @@ const AppLayout = ({ children, title, showBack, role: roleProp, headerAction }: 
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-lg border-t border-border max-w-lg mx-auto">
         <div className="flex items-center justify-around py-2.5 pb-3">
           {tabs.map((tab) => {
-            const isActive = location.pathname === tab.path;
+            const isActive = pathname === tab.path;
             return (
               <button
                 key={tab.path}
-                onClick={() => navigate(tab.path)}
+                onClick={() => router.push(tab.path)}
                 className={cn(
                   "flex flex-col items-center gap-1 px-4 py-1.5 rounded-xl transition-colors relative",
                   isActive ? "text-foreground" : "text-muted-foreground"
